@@ -1,0 +1,250 @@
+= Understand the Neo4j type systems
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+
+[abstract]
+--
+There are several layers of abstraction involved getting values of a given type into Neo4j and out of the database again.
+Chosing one technology to write a value and another to retrieve it, can lead to hard to spot errors.
+This tip demonstrate some combinations of drivers that work well to together and explains why certain values end up in the database with a different type than on the Java-side of things.
+--
+
+== Problem
+
+You have a node with a numeric value in your database.
+On the client side, you'll expect an `int` or `java.lang.Integer` but are getting back a `long` or `java.lang.Long`. from you connection
+
+== Solution
+
+There is no "one-size-fits" all solution to this problem, but merely an explanation and a recommendation.
+The database itself supports a lot of different types like  `byte`, `short`, `int`, 'long`, `String`, arrays thereof and many more.
+This types are however database internal.
+You interact with these internal types as soon as you interact with an embedded database without using a driver.
+It doesn't matter if you make direct API calls or interact through Cypher with the database.
+
+IMPORTANT: The term _driver_ is used in multiple places: First and foremost it's a library that implements a certain protocol to connect a client to a database.
+The https://github.com/neo4j/neo4j-java-driver[Neo4j-Java-Driver] is such a driver.
+It implements the https://en.wikipedia.org/wiki/Bolt_(network_protocol)[Bolt protocol].
+https://github.com/neo4j/neo4j-ogm[Neo4j-OGM] also uses the term driver but here, the OGM-Bolt-driver sits on top of the Java-Driver.
+The OGM-embedded-driver uses the embedded API directly.
+
+Look at <<ogm-type-convers>> to see how the the Java driver, embedded database, OGM and finally work together:
+
+.Moving parts in type conversion
+[[ogm-type-convers]]
+[plantuml, ogm-type-convers, png]
+----
+@startdot
+digraph foo {
+  neo4j [shape=cylinder]
+  bolt [shape=record,label="{ Bolt | org.neo4j.driver.v1.* }"]
+  embedded [shape=record,label="{ Embedded | org.neo4j.graphdb.* }"]
+  ogm [shape=record,label="{ OGM | org.neo4j.ogm.* }"]
+  application [shape=record,label="{ Application | your.domain.* }"]
+
+  neo4j -> bolt
+	bolt -> ogm
+	embedded -> ogm
+	ogm -> application
+}
+@enddot
+----
+
+Cypher itself exposes the following types:
+
+.The Cypher type system
+[options="header", cols=",,"]
+|===
+| Cypher Type | Parameter | Result
+| `null`* | ✔ | ✔
+| `List`  | ✔ | ✔
+| `Map`   | ✔ | ✔
+| `Boolean` | ✔ | ✔
+| `Integer` | ✔ | ✔
+| `Float` | ✔ | ✔
+| `String` | ✔ | ✔
+| `ByteArray` | ✔ | ✔
+| `Date` | ✔ | ✔
+| `Time` | ✔ | ✔
+| `LocalTime` | ✔ | ✔
+| `DateTime` | ✔ | ✔
+| `LocalDateTime` | ✔ | ✔
+| `Duration` | ✔ | ✔
+| `Point` | ✔ | ✔
+| `Node` | | ✔
+| `Relationship` | | ✔
+| `Path`|  | ✔
+|===
+
+From https://neo4j.com/docs/developer-manual/3.4/drivers/cypher-values/[Working with Cypher values].
+
+The Java driver maps those types to the following Java types:
+
+.Mapping from Neo4j / Cypher type to Java
+[options="header", cols="m,"]
+|===
+| Neo4j type        | Java type
+| null | `null`
+| List | `List<Object>`
+| Map | `Map<String, Object>`
+| Boolean | `boolean`
+| Integer | `long`
+| Float | `double`
+| String | `String`
+| ByteArray | `byte[]`
+| Date | `LocalDate`
+| Time | `OffsetTime`
+| LocalTime | `LocalTime`
+| DateTime | `ZonedDateTime`
+| LocalDateTime | `LocalDateTime`
+| Duration | *`IsoDuration`**
+| Point | *`Point`*
+| Node | *`Node`*
+| Relationship | *`Relationship`*
+| Path | *`Path`*
+|===
+
+So in any case you get a `long` out of your database while you are sure you have stored an `int` or an `Integer` in the past, you probably have used an embedded instance with a direct connection.
+Having a value with a smaller width in the database than your application should usually not be a problem, apart from a necessary cast.
+Having `long` or `double` stored and expecting `int` or `float` back, you're risking a loss of precision.
+The Java driver will throw a `LossyCoercion` exception.
+
+NOTE: The preferred way of interacting with Neo4j is through a driver.
+If you access the embedded database directly, you should make sure to access it in a consistent way.
+In a scenario where this isn't possible, for example when you are switching from embedded to cluster, you may have to adapter your client code to use the correct type.
+
+== Examples
+
+All example code is in the `understand-the-type-system` project.
+In `TypeConversionTest` we set up an embedded instance having the Bolt-Connector enabled as well. See <<using-an-embedded-instance>>.
+
+[source,java]
+[[using-an-embedded-instance]]
+.TypeConversionTest, Setting up an embedded database with Bolt enabled
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=using-an-embedded-instance,indent=0]
+----
+
+The examples consists of write and read commands.
+The read commands take an `Integer` value, store it as a property of a node labeled  `TestNode` and retrieve the nodes id.
+The write commands take the nodes id and return the value of the property.
+
+We are dealing throughout the examples with this property:
+
+[source,java]
+[[value-test-property]]
+.TypeConversionTest, Our test property
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=value-test-property,indent=0]
+----
+
+=== Write and read directly through the API
+
+Writing looks probably like this:
+
+[source,java]
+[[write-via-api]]
+.WriteViaAPICmd, Example of how to write via `org.neo4j.graphdb.GraphDatabaseService`
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/WriteViaAPICmd.java[tags=write-via-api,indent=0]
+----
+
+A test confirms that reading through the same API returns `42` as `Integer` again.
+
+[source,java]
+[[writingAndReadingViaDirectApi]]
+.TypeConversionTest, Write and read directly through the API
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=writingAndReadingViaDirectApi,indent=0]
+----
+
+Conclusion: The `Integer` value written can be read back as as `Integer` again.
+
+=== Write and read with Cypher
+
+Given the Cypher statement in <<cypher-write>>, we can this use this for writing via the API and the Java-Driver:
+
+[source,java]
+[[cypher-write]]
+.TypeConversionTest, Cypher write statement
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=cypher-write,indent=0]
+----
+
+==== via the API
+
+Writing with Cypher via embedded API can look like this:
+
+[source,java]
+[[write-with-cypher-via-embedded]]
+.WriteWithCypherViaEmbeddedCmd, Example of how to use Cypher via `org.neo4j.graphdb.GraphDatabaseService`
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/WriteWithCypherViaEmbeddedCmd.java[tags=write-with-cypher-via-embedded,indent=0]
+----
+
+Again, the test confirms that reading through the same API returns `42` as `Integer`:
+
+[source,java]
+[[writingAndReadingWithCypherOverEmbeddedConnection]]
+.TypeConversionTest, Write and read with Cypher over embedded connection
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=writingAndReadingWithCypherOverEmbeddedConnection,indent=0]
+----
+
+==== via the Java driver
+
+This looks different when using Cypher over the Java driver.
+That is the point where the Type mapping kicks in.
+
+[source,java]
+[[write-with-cypher-via-bolt]]
+.WriteWithCypherViaBoltCmd, Example of how to use Cypher via the Java driver
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/WriteWithCypherViaBoltCmd.java[tags=write-with-cypher-via-bolt,indent=0]
+----
+
+Now the test looks differen:
+We have to case the original property to a `Long` to make it pass:
+
+[source,java]
+[[writingAndReadingWithCypherOverBoltConnection]]
+.TypeConversionTest, Write and read with Cypher via the Java driver
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=writingAndReadingWithCypherOverBoltConnection,indent=0]
+----
+
+The driver has converted the `Integer` value to `Long` during write and read.
+
+==== Mixing access patterns
+
+The test in <<mixingDifferentAccessMethods>> demonstrates mixed access patterns.
+
+[source,java]
+[[mixingDifferentAccessMethods]]
+.TypeConversionTest, Mixing access patterns
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=mixingDifferentAccessMethods,indent=0]
+----
+
+You'll be fine if you use Cypher over the Java driver and expect a `Long`.
+However, you'll cannot expect an `Integer`  written through over a driver to return as `Integer`.
+
+=== OGM
+
+OGM will happily map a smaller property stored to a wider attribute as <<ogm-mapping>> shows, using either a direct connection or a driver connection.
+Mapping a wider property to to a smaller attribute will fail.
+
+[source,java]
+[[ogm-mapping]]
+.TypeConversionTest, Read with OGM
+----
+include::{examples}/understand-the-type-system/src/test/java/org/neo4j/tips/ogm/understand_the_type_system/TypeConversionTest.java[tags=ogm-mapping,indent=0]
+----

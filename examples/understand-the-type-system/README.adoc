@@ -1,0 +1,4 @@
+= understand-the-type-system
+
+You'll need JDK 10+ to compile and run this project. 
+Use `./mvnw clean package` to compile and run all tests.
