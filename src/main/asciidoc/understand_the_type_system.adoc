@@ -1,4 +1,4 @@
-= Understand the Neo4j type systems
+= Understand the Neo4j Cypher and OGM type system
 Michael Simons <michael.simons@neo4j.com>
 :doctype: article
 :lang: en
