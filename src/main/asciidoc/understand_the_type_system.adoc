@@ -25,7 +25,7 @@ On the client side, you'll expect an `int` or `java.lang.Integer` but are gettin
 == Solution
 
 There is no "one-size-fits" all solution to this problem, but merely an explanation and a recommendation.
-The database itself supports a lot of different types like  `byte`, `short`, `int`, 'long`, `String`, arrays thereof and many more.
+The database itself supports a lot of different types like  `byte`, `short`, `int`, `long`, `String`, arrays thereof and many more.
 This types are however database internal.
 You interact with these internal types as soon as you interact with an embedded database without using a driver.
 It doesn't matter if you make direct API calls or interact through Cypher with the database.
@@ -123,7 +123,7 @@ In a scenario where this isn't possible, for example when you are switching from
 
 == Examples
 
-All example code is in the `understand-the-type-system` project.
+All example code is in the link:{examles-gh-ref}/understand-the-type-system[`understand-the-type-system`] project.
 In `TypeConversionTest` we set up an embedded instance having the Bolt-Connector enabled as well. See <<using-an-embedded-instance>>.
 
 [source,java]
