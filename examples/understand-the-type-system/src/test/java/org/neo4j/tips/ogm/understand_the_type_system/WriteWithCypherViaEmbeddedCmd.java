@@ -15,38 +15,37 @@
  */
 package org.neo4j.tips.ogm.understand_the_type_system;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
+import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
 
 import java.util.Map;
 import java.util.function.Function;
 
-import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 
 /**
  * @author Michael J. Simons
  */
 public class WriteWithCypherViaEmbeddedCmd implements Function<Integer, Long> {
 
-    private final GraphDatabaseService graphDatabaseService;
+	private final GraphDatabaseService graphDatabaseService;
 
-    public WriteWithCypherViaEmbeddedCmd(final GraphDatabaseService graphDatabaseService) {
-        this.graphDatabaseService = graphDatabaseService;
-    }
+	public WriteWithCypherViaEmbeddedCmd(final GraphDatabaseService graphDatabaseService) {
+		this.graphDatabaseService = graphDatabaseService;
+	}
 
-    @Override
-    public Long apply(final Integer value) {
-        // tag::write-with-cypher-via-embedded[]
-        final Map<String, Object> parameters = Map.of(
-            NAME_TEST_PROPERTY, value,
-            NAME_SOURCE_PROPERTY, "written with Cypher via direct connection to embedded");
+	@Override
+	public Long apply(final Integer value) {
+		// tag::write-with-cypher-via-embedded[]
+		final Map<String, Object> parameters = Map.of(NAME_TEST_PROPERTY, value, NAME_SOURCE_PROPERTY,
+				"written with Cypher via direct connection to embedded");
 
-        try (var transaction = graphDatabaseService.beginTx()) {
-            final Long nodeID = graphDatabaseService.execute(CYPHER_WRITE, parameters)
-                    .map(row -> ((Node) row.get("n")).getId()).stream().findFirst().get();
-            transaction.success();
-            return nodeID;
-        }
-        // end::write-with-cypher-via-embedded[]
-    }
+		try (var transaction = graphDatabaseService.beginTx()) {
+			final Long nodeID = graphDatabaseService.execute(CYPHER_WRITE, parameters)
+					.map(row -> ((Node) row.get("n")).getId()).stream().findFirst().get();
+			transaction.success();
+			return nodeID;
+		}
+		// end::write-with-cypher-via-embedded[]
+	}
 }

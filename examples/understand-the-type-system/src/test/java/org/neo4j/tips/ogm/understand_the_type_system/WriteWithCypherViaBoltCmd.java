@@ -15,34 +15,33 @@
  */
 package org.neo4j.tips.ogm.understand_the_type_system;
 
-import org.neo4j.driver.v1.Driver;
+import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
 
 import java.util.Map;
 import java.util.function.Function;
 
-import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
+import org.neo4j.driver.v1.Driver;
 
 /**
  * @author Michael J. Simons
  */
 public class WriteWithCypherViaBoltCmd implements Function<Integer, Long> {
 
-    private final Driver driver;
+	private final Driver driver;
 
-    public WriteWithCypherViaBoltCmd(final Driver driver) {
-        this.driver = driver;
-    }
+	public WriteWithCypherViaBoltCmd(final Driver driver) {
+		this.driver = driver;
+	}
 
-    @Override
-    public Long apply(final Integer value) {
-        // tag::write-with-cypher-via-bolt[]
-        final Map<String, Object> parameters = Map.of(
-            NAME_TEST_PROPERTY, value,
-            NAME_SOURCE_PROPERTY, "written with Cypher via Java (Bolt) driver");
+	@Override
+	public Long apply(final Integer value) {
+		// tag::write-with-cypher-via-bolt[]
+		final Map<String, Object> parameters = Map.of(NAME_TEST_PROPERTY, value, NAME_SOURCE_PROPERTY,
+				"written with Cypher via Java (Bolt) driver");
 
-        try (var session = driver.session()) {
-            return session.writeTransaction(tx -> tx.run(CYPHER_WRITE, parameters).single().get("n").asNode().id());
-        }
-        // end::write-with-cypher-via-bolt[]
-    }
+		try (var session = driver.session()) {
+			return session.writeTransaction(tx -> tx.run(CYPHER_WRITE, parameters).single().get("n").asNode().id());
+		}
+		// end::write-with-cypher-via-bolt[]
+	}
 }

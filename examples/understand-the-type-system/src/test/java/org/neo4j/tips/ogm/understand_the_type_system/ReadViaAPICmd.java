@@ -15,39 +15,39 @@
  */
 package org.neo4j.tips.ogm.understand_the_type_system;
 
+import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
+
+import java.util.function.Function;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.function.Function;
-
-import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.NAME_SOURCE_PROPERTY;
-import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.NAME_TEST_PROPERTY;
 
 /**
  * @author Michael J. Simons
  */
 public class ReadViaAPICmd implements Function<Long, Integer> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReadViaAPICmd.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReadViaAPICmd.class);
 
-    private final GraphDatabaseService graphDatabaseService;
+	private final GraphDatabaseService graphDatabaseService;
 
-    public ReadViaAPICmd(final GraphDatabaseService graphDatabaseService) {
-        this.graphDatabaseService = graphDatabaseService;
-    }
+	public ReadViaAPICmd(final GraphDatabaseService graphDatabaseService) {
+		this.graphDatabaseService = graphDatabaseService;
+	}
 
-    @Override
-    public Integer apply(final Long nodeId) {
-        try (var transaction = graphDatabaseService.beginTx()) {
-            final Node node = graphDatabaseService.getNodeById(nodeId);
-            final Object testProperty = node.getProperty(NAME_TEST_PROPERTY);
-            final Object sourceProperty = node.getProperty(NAME_SOURCE_PROPERTY);
-            transaction.success();
+	@Override
+	public Integer apply(final Long nodeId) {
+		try (var transaction = graphDatabaseService.beginTx()) {
+			final Node node = graphDatabaseService.getNodeById(nodeId);
+			final Object testProperty = node.getProperty(NAME_TEST_PROPERTY);
+			final Object sourceProperty = node.getProperty(NAME_SOURCE_PROPERTY);
+			transaction.success();
 
-            LOGGER.info("Node with id {} was {}, property has value {} and is of type {}", node.getId(), sourceProperty, testProperty, testProperty.getClass());
-            return (Integer) testProperty;
-        }
-    }
+			LOGGER.info("Node with id {} was {}, property has value {} and is of type {}", node.getId(), sourceProperty,
+					testProperty, testProperty.getClass());
+			return (Integer) testProperty;
+		}
+	}
 }

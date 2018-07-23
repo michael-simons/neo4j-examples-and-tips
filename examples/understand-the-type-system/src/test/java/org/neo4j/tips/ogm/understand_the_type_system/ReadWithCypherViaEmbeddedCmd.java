@@ -15,38 +15,39 @@
  */
 package org.neo4j.tips.ogm.understand_the_type_system;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
 
 import java.util.Map;
 import java.util.function.Function;
 
-import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.CYPHER_READ;
-import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.NAME_TEST_PROPERTY;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Michael J. Simons
  */
 public class ReadWithCypherViaEmbeddedCmd implements Function<Long, Integer> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReadWithCypherViaEmbeddedCmd.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReadWithCypherViaEmbeddedCmd.class);
 
-    private final GraphDatabaseService graphDatabaseService;
+	private final GraphDatabaseService graphDatabaseService;
 
-    public ReadWithCypherViaEmbeddedCmd(final GraphDatabaseService graphDatabaseService) {
-        this.graphDatabaseService = graphDatabaseService;
-    }
+	public ReadWithCypherViaEmbeddedCmd(final GraphDatabaseService graphDatabaseService) {
+		this.graphDatabaseService = graphDatabaseService;
+	}
 
-    @Override
-    public Integer apply(final Long nodeId) {
-        try (var transaction = graphDatabaseService.beginTx()) {
-            final Node node = graphDatabaseService.execute(CYPHER_READ, Map.of("id", nodeId)).stream().map(row -> (Node) row.get("n")).findFirst().get();
-            final Object testProperty = node.getProperty(NAME_TEST_PROPERTY);
-            LOGGER.info("Node with id {} was {}, property has value {} and is of type {}", node.getId(), node.getProperty(TypeConversionTest.NAME_SOURCE_PROPERTY), testProperty, testProperty.getClass());
+	@Override
+	public Integer apply(final Long nodeId) {
+		try (var transaction = graphDatabaseService.beginTx()) {
+			final Node node = graphDatabaseService.execute(CYPHER_READ, Map.of("id", nodeId)).stream()
+					.map(row -> (Node) row.get("n")).findFirst().get();
+			final Object testProperty = node.getProperty(NAME_TEST_PROPERTY);
+			LOGGER.info("Node with id {} was {}, property has value {} and is of type {}", node.getId(),
+					node.getProperty(TypeConversionTest.NAME_SOURCE_PROPERTY), testProperty, testProperty.getClass());
 
-            return (Integer) testProperty;
-        }
-    }
+			return (Integer) testProperty;
+		}
+	}
 }

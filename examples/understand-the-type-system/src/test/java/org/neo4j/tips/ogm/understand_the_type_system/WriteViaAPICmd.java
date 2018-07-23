@@ -15,35 +15,35 @@
  */
 package org.neo4j.tips.ogm.understand_the_type_system;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
+import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
 
 import java.util.function.Function;
 
-import static org.neo4j.tips.ogm.understand_the_type_system.TypeConversionTest.*;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 
 /**
  * @author Michael J. Simons
  */
 public class WriteViaAPICmd implements Function<Integer, Long> {
-    private final GraphDatabaseService graphDatabaseService;
+	private final GraphDatabaseService graphDatabaseService;
 
-    public WriteViaAPICmd(final GraphDatabaseService graphDatabaseService) {
-        this.graphDatabaseService = graphDatabaseService;
-    }
+	public WriteViaAPICmd(final GraphDatabaseService graphDatabaseService) {
+		this.graphDatabaseService = graphDatabaseService;
+	}
 
-    @Override
-    public Long apply(final Integer value) {
-        // tag::write-via-api[]
-        try (var transaction = graphDatabaseService.beginTx()) {
-            final Node node = graphDatabaseService.createNode(Label.label(NODE_LABEL));
-            node.setProperty(NAME_SOURCE_PROPERTY, "written directly via API");
-            node.setProperty(NAME_TEST_PROPERTY, value);
+	@Override
+	public Long apply(final Integer value) {
+		// tag::write-via-api[]
+		try (var transaction = graphDatabaseService.beginTx()) {
+			final Node node = graphDatabaseService.createNode(Label.label(NODE_LABEL));
+			node.setProperty(NAME_SOURCE_PROPERTY, "written directly via API");
+			node.setProperty(NAME_TEST_PROPERTY, value);
 
-            transaction.success();
-            return node.getId();
-        }
-        // end::write-via-api[]
-    }
+			transaction.success();
+			return node.getId();
+		}
+		// end::write-via-api[]
+	}
 }

@@ -25,31 +25,31 @@ import org.neo4j.ogm.annotation.NodeEntity;
 @NodeEntity
 public class TestNode {
 
-    @Id
-    @GeneratedValue
-    private Long id;
+	@Id
+	@GeneratedValue
+	private Long id;
 
-    private String source;
+	private String source;
 
-    private long numericProperty;
+	private long numericProperty;
 
-    public Long getId() {
-        return id;
-    }
+	public Long getId() {
+		return id;
+	}
 
-    public String getSource() {
-        return source;
-    }
+	public String getSource() {
+		return source;
+	}
 
-    public void setSource(String source) {
-        this.source = source;
-    }
+	public void setSource(String source) {
+		this.source = source;
+	}
 
-    public long getNumericProperty() {
-        return numericProperty;
-    }
+	public long getNumericProperty() {
+		return numericProperty;
+	}
 
-    public void setNumericProperty(long numericProperty) {
-        this.numericProperty = numericProperty;
-    }
+	public void setNumericProperty(long numericProperty) {
+		this.numericProperty = numericProperty;
+	}
 }
