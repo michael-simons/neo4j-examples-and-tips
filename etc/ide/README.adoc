@@ -1,0 +1,18 @@
+= Neo4j SDN and OGM  Formatting Settings
+
+This directory contains `eclipse-formatting.xml` and `springdata.importorder` settings files to be used with Eclipse and IntelliJ. 
+The settings are the same as used by https://github.com/spring-projects/spring-data-commons[Spring Data] with the minor difference having new lines after annotations on fields.
+
+== Eclipse Setup
+
+Import both files in Eclipse through the Preferences dialog.
+
+== IntelliJ Setup
+
+Use the IntelliJ https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter[Eclipse Code Formatter] plugin to configure code formatting and import ordering with the newest Eclipse formatter version.
+
+Additionally, make sure to configure your import settings in `Editor -> Code Style -> Java` with the following explicit settings:
+
+* Use tab character indents
+* Class count to use import with `*`: 10
+* Names count to use static import with `*`: 1
