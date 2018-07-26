@@ -1,0 +1,26 @@
+= using-multiple-session-factories
+
+You'll need JDK 10+ to compile and run this project.
+Use `./mvnw clean package` to compile and run all tests.
+
+To use multiple Neo4j session factories to different Neo4j instancens, you need those instances.
+You can either start them yourself or if you have https://www.docker.com/community-edition[Docker] installed use the provided Maven target `./mvnw docker:start` to create 2 different instances.
+
+You can access them at http://localhost:7474[localhost:7474] and http://localhost:7475[localhost:7475] using Bolt port `7687` respectively `7688`.
+
+The application is configured to use the following instances:
+
+[source,properties]
+[[spring-data-neo4j-configuration]]
+.application.properties
+----
+include::src/main/resources/application.properties[tags=spring-data-neo4j-configuration]
+----
+
+One instance with username/password of `neo4j/domain1` and Bolt the default port and the other with `neo4j/domain2` and Bolt on port `7688`.
+
+If you have started two Neo4j instances on the ports as shown above, use `./mvnw spring-boot:run` to create two different entities, on in each instance.
+The name of the entities will then be retrieved again.
+You can open your browser at the above URL to convince yourself that the `FooEntity` went to the instance for domain1, the `BarEntity` to domain2.
+
+To stop the container instances, use `./mvnw docker:stop`.

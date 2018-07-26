@@ -21,5 +21,5 @@ import org.springframework.data.neo4j.repository.Neo4jRepository;
 /**
  * @author Michael J. Simons
  */
-public interface FooRepository extends Neo4jRepository<BarEntity, Long> {
+public interface FooRepository extends Neo4jRepository<FooEntity, Long> {
 }

@@ -35,29 +35,29 @@ import org.springframework.data.neo4j.transaction.Neo4jTransactionManager;
 		transactionManagerRef = TRANSACTION_MANAGER,
 		basePackages = BASE_PACKAGE)
 public class Domain1Config {
+
+	public static final String SESSION_FACTORY = "sessionFactoryForDomain1";
+	public static final String TRANSACTION_MANAGER = "transactionManagerForDomain1";
+
 	static final String BASE_PACKAGE = "org.neo4j.tips.sdn.using_multiple_session_factories.domain1";
-
-	static final String SESSION_FACTORY = "sessionFactoryForDomain1";
-
-	static final String TRANSACTION_MANAGER = "transactionManagerForDomain1";
 
 	@Primary
 	@Bean
 	@ConfigurationProperties("spring.data.neo4j")
-	public Neo4jProperties myNeo4jProperties() {
+	Neo4jProperties neo4jPropertiesDomain1() {
 		return new Neo4jProperties();
 	}
 
 	@Primary
 	@Bean
-	public org.neo4j.ogm.config.Configuration ogmConfiguration() {
-		return myNeo4jProperties().createConfiguration();
+	org.neo4j.ogm.config.Configuration ogmConfigurationDomain1() {
+		return neo4jPropertiesDomain1().createConfiguration();
 	}
 
 	@Primary
 	@Bean(name = SESSION_FACTORY)
 	public SessionFactory sessionFactory() {
-		return new SessionFactory(ogmConfiguration(), BASE_PACKAGE);
+		return new SessionFactory(ogmConfigurationDomain1(), BASE_PACKAGE);
 	}
 
 	@Bean(name = TRANSACTION_MANAGER)

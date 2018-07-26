@@ -24,8 +24,9 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>10</java.version>
+		<neo4j-server.version>3.4.1</neo4j-server.version>
 
-		<spring-data-releasetrain.version>Lovelace-BUILD-SNAPSHOT</spring-data-releasetrain.version>
+		<spring-data-releasetrain.version>Lovelace-RC1</spring-data-releasetrain.version>
 	</properties>
 
 	<dependencies>
@@ -52,6 +53,50 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>io.fabric8</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<version>0.26.1</version>
+				<configuration>
+					<images>
+						<image>
+							<name>neo4j:${neo4j-server.version}</name>
+							<alias>domain1</alias>
+							<run>
+								<env>
+									<NEO4J_AUTH>neo4j/domain1</NEO4J_AUTH>
+								</env>
+								<ports>
+									<port>7474:7474</port>
+									<port>7687:7687</port>
+								</ports>
+								<wait>
+									<log>(?s)Remote interface available at http://localhost:7474/</log>
+									<time>40000</time>
+								</wait>
+							</run>
+						</image>
+						<image>
+							<name>neo4j:${neo4j-server.version}</name>
+							<alias>domain2</alias>
+							<run>
+								<env>
+									<NEO4J_AUTH>neo4j/domain2</NEO4J_AUTH>
+									<NEO4J_dbms_connector_bolt_advertised__address>localhost:7688</NEO4J_dbms_connector_bolt_advertised__address>
+								</env>
+								<ports>
+									<port>7475:7474</port>
+									<port>7688:7687</port>
+								</ports>
+								<wait>
+									<log>(?s)Remote interface available at http://localhost:7474/</log>
+									<time>40000</time>
+								</wait>
+							</run>
+						</image>
+					</images>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
