@@ -37,7 +37,7 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 		SpringApplication.run(TestingTheDbAccessLayerSpringBootApplication.class, args).close();
 	}
 
-	private final ArtistRepository artistRepository;
+	private final ArtistRepository<Band> bandRepository;
 
 	private final AlbumRepository albumRepository;
 
@@ -46,21 +46,30 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 	public TestingTheDbAccessLayerSpringBootApplication(
 		ArtistRepository artistRepository,
 		AlbumRepository albumRepository, Session session) {
-		this.artistRepository = artistRepository;
+		this.bandRepository = artistRepository;
 		this.albumRepository = albumRepository;
 		this.session = session;
 	}
 
 	@Override public void run(String... args) throws Exception {
-		final Band queen =
-			(Band)this.artistRepository.<Band>save(new Band("Queen"));
 
+		final Band queen =
+			this.bandRepository.save(new Band("Queen"));
 		this.albumRepository.save(new Album(queen, "Queen", Year.of(1973)));
 		this.albumRepository.save(new Album(queen, "Queen II", Year.of(1974)));
 		this.albumRepository.save(new Album(queen, "Sheer Heart Attack", Year.of(1974)));
 		this.albumRepository.save(new Album(queen, "A Night At The Opera", Year.of(1975)));
 		this.albumRepository.save(new Album(queen, "A Day At The Races", Year.of(1976)));
 		this.albumRepository.save(new Album(queen, "News Of The World", Year.of(1977)));
+		
+		final Band blackSabbath =
+			this.bandRepository.save(new Band("Black Sabbath"));
+		this.albumRepository.save(new Album(blackSabbath, "Black Sabbath", Year.of(1970)));
+		this.albumRepository.save(new Album(blackSabbath, "Paranoid", Year.of(1970)));
+		this.albumRepository.save(new Album(blackSabbath, "Master Of Reality", Year.of(1971)));
+		this.albumRepository.save(new Album(blackSabbath, "Volume 4", Year.of(1972)));
+		this.albumRepository.save(new Album(blackSabbath, "Sabbath Bloody Sabbath", Year.of(1973)));
+		this.albumRepository.save(new Album(blackSabbath, "Sabotage", Year.of(1975)));
 
 		this.session.query(String.class, "MATCH (album:Album) - [:RELEASED_BY] -> (artist:Artist) WHERE artist.name = $artist RETURN album.name",
 			Map.of("artist", "Queen")).forEach(System.out::println);
