@@ -57,8 +57,15 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 
 		this.albumRepository.save(new Album(queen, "Queen", Year.of(1973)));
 		this.albumRepository.save(new Album(queen, "Queen II", Year.of(1974)));
+		this.albumRepository.save(new Album(queen, "Sheer Heart Attack", Year.of(1974)));
+		this.albumRepository.save(new Album(queen, "A Night At The Opera", Year.of(1975)));
+		this.albumRepository.save(new Album(queen, "A Day At The Races", Year.of(1976)));
+		this.albumRepository.save(new Album(queen, "News Of The World", Year.of(1977)));
 
-		this.session.query(String.class, "MATCH (album:Album) <- [:RELEASED_BY] - (artist:Artist) WHERE artist.name = $artist RETURN album.name",
+		this.session.query(String.class, "MATCH (album:Album) - [:RELEASED_BY] -> (artist:Artist) WHERE artist.name = $artist RETURN album.name",
+			Map.of("artist", "Queen")).forEach(System.out::println);
+		System.out.println("---");
+		this.session.query(String.class, "MATCH (:Artist {name: $artist}) <- [:RELEASED_BY] - (a:Album) RETURN a.name",
 			Map.of("artist", "Queen")).forEach(System.out::println);
 	}
 }

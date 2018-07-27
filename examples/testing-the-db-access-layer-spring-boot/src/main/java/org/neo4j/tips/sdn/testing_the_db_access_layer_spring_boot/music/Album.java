@@ -30,7 +30,7 @@ import org.neo4j.ogm.annotation.Relationship;
 public class Album {
 	private Long id;
 
-	@Relationship(type = "RELEASED_BY", direction = INCOMING)
+	@Relationship("RELEASED_BY")
 	private AbstractArtist artist;
 
 	private String name;
