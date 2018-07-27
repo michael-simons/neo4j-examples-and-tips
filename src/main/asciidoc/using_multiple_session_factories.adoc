@@ -164,7 +164,7 @@ In short: It's enough to add `spring-boot-configuration-processor` as an optiona
 include::{examples}/using-multiple-session-factories/pom.xml[tags=spring-boot-configuration-processor]
 ----
 
-to generate metadata about your configuration properties (being completly your own or reused as we did).
+to generate metadata about your configuration properties (being completely your own or reused as we did).
 This metadata is read by any of the major IDEs (like NetBeans, IntelliJ IDEA or Spring Tool Suite), as shown in the following picture:
 
 .Support of configuration metadata in IntelliJ IDEA
