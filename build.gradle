@@ -19,7 +19,8 @@ tasks.withType(AsciidoctorTask) { docTask ->
     gemPath = jrubyPrepare.outputDir
 
     attributes \
-          'examles-gh-ref': 'https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/',
+          'examples-gh-ref': 'https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/',
+          'examples-gh-ref-blob': 'https://github.com/michael-simons/neo4j-sdn-ogm-tips/blob/master/examples/',
           'examples': "$projectDir/examples",
           'allow-uri-read': true
 
@@ -28,7 +29,7 @@ tasks.withType(AsciidoctorTask) { docTask ->
 
     resources {
         from(sourceDir) {
-            include '**/*.png'
+            include '**/*.png', '**/*.gif'
         }
     }
 }
@@ -38,25 +39,6 @@ task generateHTML (
         description: 'use html5 as asciidoc backend'
 ) {
     backends = ['html5']
-}
-
-
-// See: https://github.com/junit-team/junit5/commit/cb8d49578740159871a4358707c01050d194e220
-ext.imagesCatalogDir = new File(buildDir, 'asciidoc/images')
-task copyStaticImagesToCatalogDir(type: Copy) {
-	from 'src/main/asciidoc/images'
-	into imagesCatalogDir
-}
-
-task generatePDF (
-        type: AsciidoctorTask,
-        description: 'use pdf as asciidoc backend'
-) {
-    dependsOn copyStaticImagesToCatalogDir
-    backends = ['pdf']
-    attributes \
-        'imagesoutdir': imagesCatalogDir,
-        'imagesdir': imagesCatalogDir
 }
 
 liveReload {

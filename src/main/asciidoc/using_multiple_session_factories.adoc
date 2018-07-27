@@ -1,0 +1,172 @@
+= Use multiple, different connections to Neo4j instances in a Spring Boot application
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:keywords: Spring Boot, Spring Data, Spring Data Neo4j, Repositories, Configuration properties, multiple session factories
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+
+[abstract]
+--
+Sometimes there's the need to connect to different datasources from within one application at the same time.
+Those datasources may be of different type, but sometimes need to be all relational or in this case, all need to be a different Neo4j instance.
+From an architectural point of view there could be a good opportunity to introduce different services per datasource but this is not the scope of this article.
+--
+
+== Problem
+
+I want to use different Neo4j instances through different https://github.com/neo4j/neo4j-ogm[Neo4j-OGM] session factories in my https://github.com/spring-projects/spring-boot[Spring Boot] application.
+I have several domains, each with their own entity classes and repositories and each domain has it's own Neo4j instance.
+I have added the https://spring.io/guides/gs/accessing-data-neo4j/[Spring Boot Starter Data Neo4j] but it allows only one connection and all my repositories use that.
+
+== Solution
+
+For this to work you'll need Spring Boot 2.x and the most recent release of Spring Data which is called https://spring.io/blog/2018/07/26/spring-data-lovelace-rc1-available[Spring Data Lovelace (RC1)].
+
+In a standard Spring Boot 2 application generated at https://start.spring.io[start.spring.io] you would change the Spring Data Release train with the following property:
+
+[source,xml,indent=0]
+[[select-releasetrain]]
+.pom.xml
+----
+include::{examples}/using-multiple-session-factories/pom.xml[tags=select-releasetrain]
+----
+
+Then the solution can be broken down into two problems:
+
+1. <<step1,Provide a multiple connections to Neo4j>> by reusing the available https://github.com/spring-projects/spring-boot/blob/2.0.x/spring-boot-project/spring-boot-autoconfigure/src/main/java/org/springframework/boot/autoconfigure/data/neo4j/Neo4jProperties.java[Neo4jProperties] used to configure Spring Data Neo4j in Spring Boot.
+That way you avoid duplicating existing properties just for a second connection.
+2. <<step2,Configure Spring Data Neo4j to use the correct session factory>>.
+
+[[step1]]
+=== Provide a multiple connections to Neo4j
+
+The following code are in link:{examples-gh-ref-blob}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain1/Domain1Config.java[Domain1Config.java] and link:{examples-gh-ref-blob}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain2/Domain2Config.java[Domain2Config.java] of this articles example project link:{examples-gh-ref}/using-multiple-session-factories[`using-multiple-session-factories`].
+
+We are dealing with the following configuration of our Spring Boot application
+
+[source,properties]
+[[spring-data-neo4j-configuration]]
+.application.properties
+----
+include::{examples}/using-multiple-session-factories/src/main/resources/application.properties[tags=spring-data-neo4j-configuration]
+----
+
+As you see we're using the *default* properties for our domain 1.
+The configuration for domain 2 looks very similar, but has an additional prefix inside their name.
+They are in fact both mapped to the same configuration class.
+How are we doing that?
+
+`Domain1Config` does something that is normally done by the `spring-boot-starter-data-neo4j`, it creates an instance of `Neo4jProperties`:
+
+
+[source,java,indent=0]
+[[domain-1-config-properties]]
+.Domain1Config.java
+----
+include::{examples}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain1/Domain1Config.java[tags=using-default-properties]
+----
+
+The property class uses `@ConfigurationProperties(prefix = "spring.data.neo4j")` which maps configuration values (either properties, environment, config server, whatever) to property beans.
+This property bean is marked as primary and given a name that is the same as the method name creating it (`neo4jPropertiesDomain1`).
+
+With that property we'll create the OGM configuration, session factory and transaction manager as needed for instance 1, pretty much as the starter normally does.
+The starter will back off from providing those beans if they already exists.
+
+[source,java,indent=0]
+[[creating-necessary-beans-from-properties-domain1]]
+.Domain1Config.java
+----
+include::{examples}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain1/Domain1Config.java[tags=creating-necessary-beans-from-properties-domain1]
+----
+<1> Uses a static constant to provide a dedicated name for the session factory.
+<2> A static constant containing the fully qualified name of domain 1 java package.
+<3> Same as in 1 but for the transaction manager.
+
+Now for the second instance. We'll have a look at the full configuration class to get whole picture:
+
+[source,java,indent=0]
+[[full-config-domain2]]
+.Domain2Config.java
+----
+include::{examples}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain2/Domain2Config.java[tags=domain2-config]
+----
+<1> Spring Data Neo4j has always provided an injectable, shared session, much like Spring Data JPA with the EntityManager. If there are two Neo4j-OGM session factories, there are two sessions as well. If you don't provide a name as we did here, the session get's qualified with the name of the session factory itself.
+<2> See below, we create another instance of `Neo4jProperties`.
+
+Many people don't know the fact, that one can use Spring Boots configuration properties mechanismen not only on classes, but also on `@Bean`-factory methods. It maps all properties from your configuration with the specified prefix to properties of the bean. In this case, the properties from <<spring-data-neo4j-configuration>> are mapped to the bean. The rest of the configuration is - apart from different names - identically to the one for domain 1.
+
+
+[[step2]]
+=== Configure Spring Data Neo4j to use the correct session factory
+
+Having those connections in place we enable Neo4j repositories for "domain1" and "domain2" against the correct instances in our `@Configuration` classes as follows:
+
+[source,java,indent=0]
+[[customizing-neo4j-repositories1]]
+.Domain1Config.java
+----
+include::{examples}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain1/Domain1Config.java[tags=customizing-neo4j-repositories1]
+----
+<1> Specificies the Neo4j OGM Session factory to use instead the default (named `sessionFactory` which is no longer instantiated through the starter as we provided our own).
+<2> Use that session factory only for the given base package. Note that this is the same as when opening the session factory.
+<3> Also, use the correct transaction manager.
+
+The repositories for domain 2 are configured in the same way. You see the configuration already in <<full-config-domain2>>.
+
+=== How to use this?
+
+==== On the Spring Data level
+
+Given link:{examples-gh-ref-blob}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain1/FooRepository.java[FooRepository.java] and link:{examples-gh-ref-blob}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/domain2/BarRepository.java[BarRepository.java] in their respective Java-packages, you are using the different connections completely transparent as shown in <<repository-usage>>.
+
+[source,java,indent=0]
+[[repository-usage]]
+.Domain2Config.java
+----
+include::{examples}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/DemoServiceUsingRepositories.java[tags=repository-usage]
+----
+
+==== On the session level
+
+You can use both the session factory or a session. They must be however qualified at their injection points as we have several matching beans of types `SessionFactory` and `Session`:
+
+[source,java,indent=0]
+[[session-usage]]
+.Domain2Config.java
+----
+include::{examples}/using-multiple-session-factories/src/main/java/org/neo4j/tips/sdn/using_multiple_session_factories/DemoServiceUsingSession.java[tags=session-usage]
+----
+<1> Use the qualifier based on the session factories name
+<2> Use the name configured in <<full-config-domain2>>.
+
+== About the example
+
+The example uses two server instances provided via Docker, so that you can convince yourself that the setup works as expected.
+For your convience, both instances can be started and stopped via a single Maven command (`./mvnw docker:start`and `./mvnw docker:stop` respectivly).
+You can access them at http://localhost:7474[localhost:7474] and http://localhost:7475[localhost:7475].
+
+== Added bonus: Spring Boots configuration processor
+
+Applying `@ConfigurationProperties` to an `@Bean` method is subject to the generation of configurational metadata as well.
+Read about that topic https://docs.spring.io/spring-boot/docs/current/reference/html/configuration-metadata.html[here].
+In short: It's enough to add `spring-boot-configuration-processor` as an optional dependency to your build
+
+[source,xml,indent=0]
+[[spring-boot-configuration-processor]]
+.pom.xml
+----
+include::{examples}/using-multiple-session-factories/pom.xml[tags=spring-boot-configuration-processor]
+----
+
+to generate metadata about your configuration properties (being completly your own or reused as we did).
+This metadata is read by any of the major IDEs (like NetBeans, IntelliJ IDEA or Spring Tool Suite), as shown in the following picture:
+
+.Support of configuration metadata in IntelliJ IDEA
+[[using_multiple_session_factories-properties-support.gif]]
+image::using_multiple_session_factories-properties-support.gif[]

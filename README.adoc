@@ -3,3 +3,4 @@
 A curated list of Neo4j SDN and OGM tips.
 
 * https://michael-simons.github.io/neo4j-sdn-ogm-tips/understand_the_type_system[Understand the Neo4j Cypher and OGM type system]
+* https://michael-simons.github.io/neo4j-sdn-ogm-tips/using_multiple_session_factories[Use multiple, different connections to Neo4j instances in a Spring Boot application]

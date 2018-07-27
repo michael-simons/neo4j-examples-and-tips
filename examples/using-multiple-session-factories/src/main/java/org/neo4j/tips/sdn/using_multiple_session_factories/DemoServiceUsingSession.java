@@ -27,25 +27,35 @@ import org.springframework.stereotype.Service;
 /**
  * @author Michael J. Simons
  */
+// tag::session-usage[]
 @Service
 public class DemoServiceUsingSession {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DemoServiceUsingSession.class);
+	private static final Logger LOGGER =
+		LoggerFactory.getLogger(DemoServiceUsingSession.class);
 
 	private final Session sessionToNeoInstance1;
 
 	private final Session sessionToNeoInstance2;
 
-	public DemoServiceUsingSession( //
-			@Qualifier(Domain1Config.SESSION_FACTORY) Session sessionToNeoInstance1, //
-			Session aSessionToInstance2 //
+	public DemoServiceUsingSession(
+			@Qualifier(Domain1Config.SESSION_FACTORY) // <1>
+			Session sessionToNeoInstance1,
+			Session aSessionToInstance2 // <2>
 	) {
+
 		this.sessionToNeoInstance1 = sessionToNeoInstance1;
 		this.sessionToNeoInstance2 = aSessionToInstance2;
 	}
 
 	public void readSomeFooBar() {
-		this.sessionToNeoInstance1.query(String.class, "MATCH (n) RETURN n.name", Map.of()).forEach(LOGGER::info);
-		this.sessionToNeoInstance2.query(String.class, "MATCH (n) RETURN n.name", Map.of()).forEach(LOGGER::info);
+
+		this.sessionToNeoInstance1
+				.query(String.class, "MATCH (n) RETURN n.name", Map.of())
+				.forEach(LOGGER::info);
+		this.sessionToNeoInstance2
+				.query(String.class, "MATCH (n) RETURN n.name", Map.of())
+				.forEach(LOGGER::info);
 	}
 }
+// end::session-usage[]

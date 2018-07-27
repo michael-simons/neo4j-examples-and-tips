@@ -26,21 +26,28 @@ import org.springframework.stereotype.Service;
 /**
  * @author Michael J. Simons
  */
+// tag::repository-usage[]
 @Service
 public class DemoServiceUsingRepositories {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DemoServiceUsingRepositories.class);
+	private static final Logger LOGGER =
+		LoggerFactory.getLogger(DemoServiceUsingRepositories.class);
 
 	private final FooRepository fooRepository;
 
 	private final BarRepository barRepository;
 
-	public DemoServiceUsingRepositories(FooRepository fooRepository, BarRepository barRepository) {
+	public DemoServiceUsingRepositories(
+		FooRepository fooRepository,
+		BarRepository barRepository
+	) {
+
 		this.fooRepository = fooRepository;
 		this.barRepository = barRepository;
 	}
 
 	public void createSomeFooBar() {
+
 		FooEntity fooEntity = fooRepository.save(new FooEntity("This is foo"));
 		LOGGER.info("Written foo {} with id {}", fooEntity.getName(), fooEntity.getId());
 
@@ -48,3 +55,4 @@ public class DemoServiceUsingRepositories {
 		LOGGER.info("Written bar {} with id {}", barEntity.getName(), barEntity.getId());
 	}
 }
+// end::repository-usage[]

@@ -28,9 +28,14 @@ import org.springframework.data.neo4j.transaction.Neo4jTransactionManager;
 /**
  * @author Michael J. Simons
  */
+// tag::domain2-config[]
 @Configuration
-@EnableNeo4jRepositories(sessionFactoryRef = SESSION_FACTORY, transactionManagerRef = TRANSACTION_MANAGER,
-		basePackages = BASE_PACKAGE, sessionBeanName = SESSION_BEAN_NAME)
+@EnableNeo4jRepositories(
+		sessionFactoryRef = SESSION_FACTORY,
+		basePackages = BASE_PACKAGE,
+		transactionManagerRef = TRANSACTION_MANAGER,
+		sessionBeanName = SESSION_BEAN_NAME // <1>
+)
 public class Domain2Config {
 
 	public static final String SESSION_FACTORY = "sessionFactoryForDomain2";
@@ -40,23 +45,24 @@ public class Domain2Config {
 	static final String BASE_PACKAGE = "org.neo4j.tips.sdn.using_multiple_session_factories.domain2";
 
 	@Bean
-	@ConfigurationProperties("spring.data.neo4j.domain2")
-	Neo4jProperties neo4jPropertiesDomain2() {
+	@ConfigurationProperties("spring.data.neo4j.domain2") // <2>
+	public Neo4jProperties neo4jPropertiesDomain2() {
 		return new Neo4jProperties();
 	}
 
 	@Bean
-	org.neo4j.ogm.config.Configuration ogmConfigurationDomain2() {
+	public org.neo4j.ogm.config.Configuration ogmConfigurationDomain2() {
 		return neo4jPropertiesDomain2().createConfiguration();
 	}
 
 	@Bean(name = SESSION_FACTORY)
-	SessionFactory sessionFactory() {
+	public SessionFactory sessionFactory() {
 		return new SessionFactory(ogmConfigurationDomain2(), BASE_PACKAGE);
 	}
 
 	@Bean(name = TRANSACTION_MANAGER)
-	Neo4jTransactionManager neo4jTransactionManager() {
+	public Neo4jTransactionManager neo4jTransactionManager() {
 		return new Neo4jTransactionManager(sessionFactory());
 	}
 }
+// end::domain2-config[]

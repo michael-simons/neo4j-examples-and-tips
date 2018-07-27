@@ -3,7 +3,7 @@
 You'll need JDK 10+ to compile and run this project.
 Use `./mvnw clean package` to compile and run all tests.
 
-To use multiple Neo4j session factories to different Neo4j instancens, you need those instances.
+To use multiple Neo4j session factories to different Neo4j instances, you need those instances.
 You can either start them yourself or if you have https://www.docker.com/community-edition[Docker] installed use the provided Maven target `./mvnw docker:start` to create 2 different instances.
 
 You can access them at http://localhost:7474[localhost:7474] and http://localhost:7475[localhost:7475] using Bolt port `7687` respectively `7688`.

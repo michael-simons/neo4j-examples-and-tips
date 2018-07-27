@@ -123,7 +123,7 @@ In a scenario where this isn't possible, for example when you are switching from
 
 == Examples
 
-All example code is in the link:{examles-gh-ref}/understand-the-type-system[`understand-the-type-system`] project.
+All example code is in the link:{examples-gh-ref}/understand-the-type-system[`understand-the-type-system`] project.
 In `TypeConversionTest` we set up an embedded instance having the Bolt-Connector enabled as well. See <<using-an-embedded-instance>>.
 
 [source,java]

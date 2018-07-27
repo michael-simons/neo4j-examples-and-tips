@@ -30,38 +30,47 @@ import org.springframework.data.neo4j.transaction.Neo4jTransactionManager;
  * @author Michael J. Simons
  */
 @Configuration
+// tag::customizing-neo4j-repositories1[]
 @EnableNeo4jRepositories(
-		sessionFactoryRef = SESSION_FACTORY,
-		transactionManagerRef = TRANSACTION_MANAGER,
-		basePackages = BASE_PACKAGE)
+		sessionFactoryRef = SESSION_FACTORY, // <1>
+		basePackages = BASE_PACKAGE, // <2>
+		transactionManagerRef = TRANSACTION_MANAGER // <3>
+)
 public class Domain1Config {
+	// end::customizing-neo4j-repositories1[]
 
 	public static final String SESSION_FACTORY = "sessionFactoryForDomain1";
 	public static final String TRANSACTION_MANAGER = "transactionManagerForDomain1";
 
 	static final String BASE_PACKAGE = "org.neo4j.tips.sdn.using_multiple_session_factories.domain1";
 
+	// tag::using-default-properties[]
 	@Primary
 	@Bean
-	@ConfigurationProperties("spring.data.neo4j")
-	Neo4jProperties neo4jPropertiesDomain1() {
+	@ConfigurationProperties("peng")
+	public Neo4jProperties neo4jPropertiesDomain1() {
 		return new Neo4jProperties();
 	}
+	// end::using-default-properties[]
 
+	// tag::creating-necessary-beans-from-properties-domain1[]
 	@Primary
 	@Bean
-	org.neo4j.ogm.config.Configuration ogmConfigurationDomain1() {
+	public org.neo4j.ogm.config.Configuration ogmConfigurationDomain1() {
 		return neo4jPropertiesDomain1().createConfiguration();
 	}
 
 	@Primary
-	@Bean(name = SESSION_FACTORY)
+	@Bean(name = SESSION_FACTORY) // <1>
 	public SessionFactory sessionFactory() {
-		return new SessionFactory(ogmConfigurationDomain1(), BASE_PACKAGE);
+		return new SessionFactory(ogmConfigurationDomain1(), BASE_PACKAGE); // <2>
 	}
 
-	@Bean(name = TRANSACTION_MANAGER)
+	@Bean(name = TRANSACTION_MANAGER) // <3>
 	public Neo4jTransactionManager neo4jTransactionManager() {
 		return new Neo4jTransactionManager(sessionFactory());
 	}
+	// end::creating-necessary-beans-from-properties-domain1[]
+	// tag::customizing-neo4j-repositories1[]
 }
+// end::customizing-neo4j-repositories1[]

@@ -20,14 +20,18 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
+	<!-- tag::select-releasetrain[] -->
 	<properties>
+		<!-- end::select-releasetrain[] -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>10</java.version>
 		<neo4j-server.version>3.4.1</neo4j-server.version>
 
+		<!-- tag::select-releasetrain[] -->
 		<spring-data-releasetrain.version>Lovelace-RC1</spring-data-releasetrain.version>
 	</properties>
+	<!-- end::select-releasetrain[] -->
 
 	<dependencies>
 		<dependency>
@@ -35,11 +39,13 @@
 			<artifactId>spring-boot-starter-data-neo4j</artifactId>
 		</dependency>
 
+		<!-- tag::spring-boot-configuration-processor[] -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- end::spring-boot-configuration-processor[] -->
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
