@@ -19,6 +19,7 @@ import java.time.Year;
 import java.util.Map;
 
 import org.neo4j.ogm.session.Session;
+import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.AbstractArtist;
 import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.Album;
 import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.AlbumRepository;
 import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.ArtistRepository;
@@ -37,16 +38,16 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 		SpringApplication.run(TestingTheDbAccessLayerSpringBootApplication.class, args).close();
 	}
 
-	private final ArtistRepository<Band> bandRepository;
+	private final ArtistRepository<? super AbstractArtist> artistRepository;
 
 	private final AlbumRepository albumRepository;
 
 	private final Session session;
 
 	public TestingTheDbAccessLayerSpringBootApplication(
-		ArtistRepository artistRepository,
+		ArtistRepository<? super AbstractArtist> artistRepository,
 		AlbumRepository albumRepository, Session session) {
-		this.bandRepository = artistRepository;
+		this.artistRepository = artistRepository;
 		this.albumRepository = albumRepository;
 		this.session = session;
 	}
@@ -54,16 +55,16 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 	@Override public void run(String... args) throws Exception {
 
 		final Band queen =
-			this.bandRepository.save(new Band("Queen"));
+			this.artistRepository.save(new Band("Queen"));
 		this.albumRepository.save(new Album(queen, "Queen", Year.of(1973)));
 		this.albumRepository.save(new Album(queen, "Queen II", Year.of(1974)));
 		this.albumRepository.save(new Album(queen, "Sheer Heart Attack", Year.of(1974)));
 		this.albumRepository.save(new Album(queen, "A Night At The Opera", Year.of(1975)));
 		this.albumRepository.save(new Album(queen, "A Day At The Races", Year.of(1976)));
 		this.albumRepository.save(new Album(queen, "News Of The World", Year.of(1977)));
-		
+
 		final Band blackSabbath =
-			this.bandRepository.save(new Band("Black Sabbath"));
+			this.artistRepository.save(new Band("Black Sabbath"));
 		this.albumRepository.save(new Album(blackSabbath, "Black Sabbath", Year.of(1970)));
 		this.albumRepository.save(new Album(blackSabbath, "Paranoid", Year.of(1970)));
 		this.albumRepository.save(new Album(blackSabbath, "Master Of Reality", Year.of(1971)));
