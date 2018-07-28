@@ -15,13 +15,13 @@
  */
 package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music;
 
-import static org.neo4j.ogm.annotation.Relationship.INCOMING;
-
 import java.time.Year;
 import java.util.Objects;
 
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
+import org.neo4j.ogm.annotation.typeconversion.Convert;
+import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.YearConverter;
 
 /**
  * @author Michael J. Simons
@@ -35,6 +35,7 @@ public class Album {
 
 	private String name;
 
+	@Convert(YearConverter.class)
 	private Year releasedIn;
 
 	public Album(AbstractArtist artist, String name, Year releasedIn) {
