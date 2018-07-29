@@ -15,47 +15,49 @@
  */
 package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music;
 
-import java.time.Year;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import org.neo4j.ogm.annotation.NodeEntity;
-import org.neo4j.ogm.annotation.Relationship;
+import org.neo4j.ogm.annotation.PostLoad;
+import org.neo4j.ogm.annotation.Transient;
 
 /**
  * @author Michael J. Simons
  */
 @NodeEntity
-public class SoloArtist extends AbstractArtist {
+public class Country {
 	private Long id;
+
+	private String code;
 
 	private String name;
 
-	@Relationship(type="PLAYED_IN")
-	private List<PlayedIn> playedIn = new ArrayList<>();
-
-	public SoloArtist(String name) {
-		this.name = name;
+	public Country(String code) {
+		this.code = code;
+		this.name = new Locale("", this.code).getDisplayCountry(Locale.ENGLISH);
 	}
 
-	public SoloArtist playedIn(Band band, Year from, Year to) {
-		this.playedIn.add(new PlayedIn(this, band, List.of(from + "-" + to)));
-		return this;
+	public String getCode() {
+		return code;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
-		if (!(o instanceof SoloArtist))
+		if (!(o instanceof Country))
 			return false;
-		SoloArtist that = (SoloArtist) o;
-		return Objects.equals(name, that.name);
+		Country country = (Country) o;
+		return Objects.equals(code, country.code);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name);
+		return Objects.hash(code);
 	}
 }

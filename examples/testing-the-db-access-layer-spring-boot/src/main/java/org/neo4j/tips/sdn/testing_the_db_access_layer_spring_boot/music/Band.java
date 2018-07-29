@@ -18,6 +18,7 @@ package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music;
 import java.util.Objects;
 
 import org.neo4j.ogm.annotation.NodeEntity;
+import org.neo4j.ogm.annotation.Relationship;
 
 /**
  * @author Michael J. Simons
@@ -28,12 +29,27 @@ public class Band extends AbstractArtist {
 
 	private String name;
 
+	@Relationship("FOUNDED_IN")
+	private Country foundedIn;
+
 	public Band(String name) {
+		this(name, null); }
+
+	public Band(String name, Country foundedIn) {
 		this.name = name;
+		this.foundedIn = foundedIn;
 	}
 
 	public String getName() {
 		return name;
+	}
+
+	public Country getFoundedIn() {
+		return foundedIn;
+	}
+
+	public void setFoundedIn(Country foundedIn) {
+		this.foundedIn = foundedIn;
 	}
 
 	@Override

@@ -16,7 +16,10 @@
 package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot;
 
 import java.time.Year;
+import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.ogm.session.Session;
 import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.AbstractArtist;
@@ -24,6 +27,10 @@ import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.Album;
 import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.AlbumRepository;
 import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.ArtistRepository;
 import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.Band;
+import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.Country;
+import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.CountryRepository;
+import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.PlayedIn;
+import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.SoloArtist;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -42,20 +49,36 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 
 	private final AlbumRepository albumRepository;
 
+	private final CountryRepository countryRepository;
+
 	private final Session session;
 
 	public TestingTheDbAccessLayerSpringBootApplication(
 		ArtistRepository<? super AbstractArtist> artistRepository,
-		AlbumRepository albumRepository, Session session) {
+		AlbumRepository albumRepository,
+		CountryRepository countryRepository,
+		Session session) {
 		this.artistRepository = artistRepository;
 		this.albumRepository = albumRepository;
+		this.countryRepository = countryRepository;
 		this.session = session;
 	}
 
 	@Override public void run(String... args) throws Exception {
 
+		Stream.concat(
+			Locale.getISOCountries(Locale.IsoCountryCode.PART1_ALPHA2).stream(),
+			Locale.getISOCountries(Locale.IsoCountryCode.PART1_ALPHA3).stream())
+			.forEach(c -> {
+				if(!countryRepository.findByCode(c).isPresent()) {
+					countryRepository.save(new Country(c));
+				}
+			});
+
+		final Country greatBritain = countryRepository.findByCode("GB").get();
+
 		final Band queen =
-			this.artistRepository.save(new Band("Queen"));
+			this.artistRepository.save(new Band("Queen", greatBritain));
 		this.albumRepository.save(new Album(queen, "Queen", Year.of(1973)));
 		this.albumRepository.save(new Album(queen, "Queen II", Year.of(1974)));
 		this.albumRepository.save(new Album(queen, "Sheer Heart Attack", Year.of(1974)));
@@ -64,13 +87,42 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 		this.albumRepository.save(new Album(queen, "News Of The World", Year.of(1977)));
 
 		final Band blackSabbath =
-			this.artistRepository.save(new Band("Black Sabbath"));
+			this.artistRepository.save(new Band("Black Sabbath", greatBritain));
 		this.albumRepository.save(new Album(blackSabbath, "Black Sabbath", Year.of(1970)));
 		this.albumRepository.save(new Album(blackSabbath, "Paranoid", Year.of(1970)));
 		this.albumRepository.save(new Album(blackSabbath, "Master Of Reality", Year.of(1971)));
 		this.albumRepository.save(new Album(blackSabbath, "Volume 4", Year.of(1972)));
 		this.albumRepository.save(new Album(blackSabbath, "Sabbath Bloody Sabbath", Year.of(1973)));
 		this.albumRepository.save(new Album(blackSabbath, "Sabotage", Year.of(1975)));
+
+		final Country germany = countryRepository.findByCode("DE").get();
+
+		final Band scorpions =
+			this.artistRepository.save(new Band("Scorpions", germany));
+		this.albumRepository.save(new Album(scorpions, "Fly To The Rainbow", Year.of(1974)));
+		this.albumRepository.save(new Album(scorpions, "Crazy World", Year.of(1990)));
+
+		final Band dieAerzte =
+			this.artistRepository.save(new Band("Die Ärzte", germany));
+		this.albumRepository.save(new Album(dieAerzte, "Die Bestie in Menschengestalt", Year.of(1993)));
+		this.albumRepository.save(new Album(dieAerzte, "Planet Punk", Year.of(1995)));
+
+		final SoloArtist farinUrlaub = this.artistRepository.save(new SoloArtist("Farin Urlaub"));
+		final SoloArtist belaB = this.artistRepository.save(new SoloArtist("Bela B."));
+
+		final Band rainbirds = this.artistRepository.save(new Band("Rainbirds", germany));
+
+		final SoloArtist rod = this.artistRepository.save(new SoloArtist("Rodrigo González")
+			.playedIn(rainbirds, Year.of(1988), Year.of(1989))
+			.playedIn(dieAerzte, Year.of(1993), null));
+
+		this.artistRepository.save(rod);
+
+		final Band dth =
+			this.artistRepository.save(new Band("Die Toten Hosen", germany));
+		this.albumRepository.save(new Album(dth, "Kauf MICH!", Year.of(1993)));
+		this.albumRepository.save(new Album(dth, "Opium fürs Volk", Year.of(1996)));
+
 
 		this.session.query(String.class, "MATCH (album:Album) - [:RELEASED_BY] -> (artist:Artist) WHERE artist.name = $artist RETURN album.name",
 			Map.of("artist", "Queen")).forEach(System.out::println);
