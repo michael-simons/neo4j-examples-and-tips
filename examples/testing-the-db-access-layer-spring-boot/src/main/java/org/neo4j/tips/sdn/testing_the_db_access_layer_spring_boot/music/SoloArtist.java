@@ -18,7 +18,6 @@ package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
@@ -28,34 +27,16 @@ import org.neo4j.ogm.annotation.Relationship;
  */
 @NodeEntity
 public class SoloArtist extends AbstractArtist {
-	private Long id;
 
-	private String name;
-
-	@Relationship(type="PLAYED_IN")
+	@Relationship(type = "PLAYED_IN")
 	private List<PlayedIn> playedIn = new ArrayList<>();
 
 	public SoloArtist(String name) {
-		this.name = name;
+		super(name);
 	}
 
 	public SoloArtist playedIn(Band band, Year from, Year to) {
 		this.playedIn.add(new PlayedIn(this, band, List.of(from + "-" + to)));
 		return this;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o)
-			return true;
-		if (!(o instanceof SoloArtist))
-			return false;
-		SoloArtist that = (SoloArtist) o;
-		return Objects.equals(name, that.name);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(name);
 	}
 }

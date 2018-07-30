@@ -15,32 +15,10 @@
  */
 package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music;
 
-import org.neo4j.ogm.annotation.NodeEntity;
-import org.neo4j.ogm.annotation.Relationship;
+import org.springframework.data.neo4j.repository.Neo4jRepository;
 
 /**
  * @author Michael J. Simons
  */
-@NodeEntity
-public class Band extends AbstractArtist {
-
-	@Relationship("FOUNDED_IN")
-	private Country foundedIn;
-
-	public Band(String name) {
-		this(name, null);
-	}
-
-	public Band(String name, Country foundedIn) {
-		super(name);
-		this.foundedIn = foundedIn;
-	}
-
-	public Country getFoundedIn() {
-		return foundedIn;
-	}
-
-	public void setFoundedIn(Country foundedIn) {
-		this.foundedIn = foundedIn;
-	}
+public interface TrackRepository extends Neo4jRepository<TrackRepository, Long> {
 }

@@ -18,19 +18,13 @@ package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot;
 import java.time.Year;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.ogm.session.Session;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.AbstractArtist;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.Album;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.AlbumRepository;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.ArtistRepository;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.Band;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.Country;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.CountryRepository;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.PlayedIn;
-import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.SoloArtist;
+import org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music.*;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -65,7 +59,7 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 	}
 
 	@Override public void run(String... args) throws Exception {
-
+		/*
 		Stream.concat(
 			Locale.getISOCountries(Locale.IsoCountryCode.PART1_ALPHA2).stream(),
 			Locale.getISOCountries(Locale.IsoCountryCode.PART1_ALPHA3).stream())
@@ -74,13 +68,28 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 					countryRepository.save(new Country(c));
 				}
 			});
+			*/
 
-		final Country greatBritain = countryRepository.findByCode("GB").get();
+
+
+		final Country greatBritain = countryRepository.findByCode("GB").orElseGet(() -> countryRepository.save(new Country(("GB"))));
 
 		final Band queen =
 			this.artistRepository.save(new Band("Queen", greatBritain));
-		this.albumRepository.save(new Album(queen, "Queen", Year.of(1973)));
-		this.albumRepository.save(new Album(queen, "Queen II", Year.of(1974)));
+		final SoloArtist brianMay = this.artistRepository.save(new SoloArtist("Brian May")
+			.playedIn(queen, Year.of(1970), null));
+		final SoloArtist freddieMercury = this.artistRepository.save(new SoloArtist("Freddie Mercury")
+			.playedIn(queen, Year.of(1970), Year.of(1991)));
+		final SoloArtist rogerTaylor = this.artistRepository.save(new SoloArtist("Roger Taylor")
+			.playedIn(queen, Year.of(1970), null));
+
+		final Track keepYourselfAlive = new Track("Keep Yourself Alive", Set.of(brianMay));
+		final Track sevenSeasOfRhye = new Track("Seven Seas Of Rhye", Set.of(freddieMercury, brianMay));
+
+		this.albumRepository.save(new Album(queen, "Queen", Year.of(1973))
+			.addTrack(keepYourselfAlive, 1, 1)
+			.addTrack(sevenSeasOfRhye, 1, 10));
+		this.albumRepository.save(new Album(queen, "Queen II", Year.of(1974)).addTrack(sevenSeasOfRhye, 1, 11));
 		this.albumRepository.save(new Album(queen, "Sheer Heart Attack", Year.of(1974)));
 		this.albumRepository.save(new Album(queen, "A Night At The Opera", Year.of(1975)));
 		this.albumRepository.save(new Album(queen, "A Day At The Races", Year.of(1976)));
@@ -94,8 +103,12 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 		this.albumRepository.save(new Album(blackSabbath, "Volume 4", Year.of(1972)));
 		this.albumRepository.save(new Album(blackSabbath, "Sabbath Bloody Sabbath", Year.of(1973)));
 		this.albumRepository.save(new Album(blackSabbath, "Sabotage", Year.of(1975)));
+		this.albumRepository.save(
+			new Album(blackSabbath, "Headless Cross", Year.of(1989)).addTrack(new Track("Headless Cross").featuring(brianMay), 1, 2)
+		);
 
-		final Country germany = countryRepository.findByCode("DE").get();
+
+		final Country germany = countryRepository.findByCode("DE").orElseGet(() -> countryRepository.save(new Country(("DE"))));
 
 		final Band scorpions =
 			this.artistRepository.save(new Band("Scorpions", germany));

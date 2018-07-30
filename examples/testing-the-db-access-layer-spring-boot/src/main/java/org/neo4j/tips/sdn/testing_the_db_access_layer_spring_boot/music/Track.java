@@ -15,43 +15,56 @@
  */
 package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music;
 
-import java.util.Objects;
+import static org.neo4j.ogm.annotation.Relationship.*;
 
-import org.neo4j.ogm.annotation.NodeEntity;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
+import org.neo4j.ogm.annotation.Index;
+import org.neo4j.ogm.annotation.Relationship;
 
 /**
  * @author Michael J. Simons
  */
-@NodeEntity(label = "Artist")
-public abstract class AbstractArtist {
+public class Track {
 	private Long id;
 
+	@Index(unique = true)
 	private String name;
 
-	public AbstractArtist(String name) {
+	@Relationship("WRITTEN_BY")
+	private Set<AbstractArtist> writtenBy = new HashSet<>();
+
+	@Relationship(value = "FEATURING")
+	private Set<SoloArtist> featuring = new HashSet<>();
+
+	public Track(String name) {
+		this(name, Set.of());
+	}
+
+	public Track(String name, Set<AbstractArtist> writtenBy) {
 		this.name = name;
+		this.writtenBy = new HashSet<>(writtenBy);
 	}
 
-	public Long getId() {
-		return id;
-	}
-
-	public String getName() {
-		return name;
+	public Track featuring(final SoloArtist artist) {
+		this.featuring.add(artist);
+		return this;
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o)
 			return true;
-		if (o == null || getClass() != o.getClass())
+		if (!(o instanceof Track))
 			return false;
-		AbstractArtist that = (AbstractArtist) o;
-		return Objects.equals(name, that.name);
+		Track track = (Track) o;
+		return Objects.equals(name, track.name) && Objects.equals(writtenBy, track.writtenBy);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name);
+		return Objects.hash(name, writtenBy);
 	}
 }
