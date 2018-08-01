@@ -20,6 +20,8 @@ import org.springframework.data.neo4j.repository.Neo4jRepository;
 /**
  * @author Michael J. Simons
  */
+// tag::use-the-custom-method[]
 public interface ThingRepository extends Neo4jRepository<Thing, Long> {
 	Iterable<Thing> findAllByPropertyValue(String property, Object value);
 }
+// end::use-the-custom-method[]

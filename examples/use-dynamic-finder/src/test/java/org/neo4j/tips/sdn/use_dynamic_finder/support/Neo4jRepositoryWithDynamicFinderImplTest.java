@@ -15,9 +15,8 @@
  */
 package org.neo4j.tips.sdn.use_dynamic_finder.support;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.tips.sdn.use_dynamic_finder.domain.Thing;
@@ -29,24 +28,30 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 /**
  * @author Michael J. Simons
  */
-@ExtendWith(SpringExtension.class)
-@DataNeo4jTest
+// tag::test-the-new-method[]
+@ExtendWith(SpringExtension.class) // <1>
+@DataNeo4jTest // <2>
 public class Neo4jRepositoryWithDynamicFinderImplTest {
 
 	private final ThingRepository thingRepository;
 
-	@Autowired
-	public Neo4jRepositoryWithDynamicFinderImplTest(ThingRepository thingRepository) {
+	@Autowired // <3>
+	public Neo4jRepositoryWithDynamicFinderImplTest(
+		ThingRepository thingRepository
+	) {
 		this.thingRepository = thingRepository;
 	}
 
 	@Test
 	public void findAllByPropertyValueShouldWork() {
-		this.thingRepository.save(new Thing("Thing 1", "This is the 1st thing", 9.99));
-		this.thingRepository.save(new Thing("AnotherThing", "This is a thing, too", 9.99));
-		this.thingRepository.save(new Thing("YetAnotherThing", "This is a thing, too", 9.99));
+		// <4>
+		thingRepository.save(new Thing("Thing 1", "This is the 1st thing", 9.99));
+		thingRepository.save(new Thing("AnotherThing", "This is a thing, too", 9.99));
+		thingRepository.save(new Thing("YetAnotherThing", "This is a thing, too", 9.99));
 
-		assertThat(this.thingRepository.findAllByPropertyValue("description", "This is a thing, too"))
-				.extracting(Thing::getName).contains("AnotherThing", "YetAnotherThing");
+		assertThat(thingRepository.findAllByPropertyValue("description", "This is a thing, too")) // <5>
+			.extracting(Thing::getName)
+			.contains("AnotherThing", "YetAnotherThing");
 	}
 }
+// end::test-the-new-method[]

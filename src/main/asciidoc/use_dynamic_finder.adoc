@@ -1,0 +1,90 @@
+= Create SDN repositories that find nodes by arbitrary properties
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:keywords: Spring Data, Spring Data Neo4j, Repositories, Properties
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+
+[abstract]
+--
+Back in SDN 3.x there has been a method `findAllBySchemaPropertyValue` that took a property name and a possible value and retrieved all nodes having a property with that value.
+This tip demonstrates how to bring that back.
+All the example code is on GitHub in the project link:{examples-gh-ref}/use-dynamic-finder[`use-dynamic-finder`].
+--
+
+== Problem
+
+I want to be able to define a very generic query method on my Spring Data Neo4j repository.
+The method should find all nodes having a defined property with a fixed value.
+
+== Solution
+
+Have a look at class `org.neo4j.ogm.session.Session`.
+It offers a method `loadAll` that takes a class and a `org.neo4j.ogm.cypher.Filter` as arguments.
+`Session` and `Filter` are both part of the Neo4j-OGM project, that is part of the Object-Graph-Mapping framework on which SDN depends.
+So we are safe to use that.
+
+The other building block of the solution is the feature that we can add custom behaviour to all Spring Repositories by replacing the base class.
+Read more about that here: https://docs.spring.io/spring-data/neo4j/docs/current/reference/html/#repositories.customize-base-repository["Customize the Base Repository"].
+The reason we are not just adding fragments to one repository as described in https://docs.spring.io/spring-data/neo4j/docs/current/reference/html/#repositories.single-repository-behavior[7.6.1] is simple:
+Those fragments are to be reused for different domain entities and offer no easy way to retrieve the target class, which we need to use `Session#loadAll` as described above.
+
+So here is our new base class for all repository beans:
+
+[source,java,indent=0]
+[[custom-base-class-for-repositories]]
+.Neo4jRepositoryWithDynamicFinderImpl.java
+----
+include::{examples}/use-dynamic-finder/src/main/java/org/neo4j/tips/sdn/use_dynamic_finder/support/Neo4jRepositoryWithDynamicFinderImpl.java[tags=custom-base-class-for-repositories]
+----
+<1> Mark this one class `@NoRepositoryBean` thus not making it a concrete repository itself.
+<2> Extend from our SimpleNeo4jRepository to get all the base functionality.
+<3> For every instance of this class created by the SDN framework, we need to have access to the domain class it's created for.
+The same applies for the Neo4j-OGM session to execute a query.
+<4> Needed for our base class we're inheriting from.
+<5> We will declare the signature of this method here on every concrete repository that should support "dynamic finders".
+Here, it's the blueprint implementation.
+<6> Here we create an OGM filter that operates an `EQUALS` comparision on the given property with the given value.
+
+With this class in place we have an implementation for `findAllByPropertyValue` in place.
+Next step is to make Spring Data Neo4j aware of the new base class.
+This is done through `@EnableNeo4jRepositories`.
+You put this annotation to any `@Configuration` you like.
+Your're `Main`-class will usually do just fine.
+
+[source,java,indent=0]
+[[enable-custom-base-class-for-repositories]]
+.Neo4jRepositoryWithDynamicFinderImpl.java
+----
+include::{examples}/use-dynamic-finder/src/main/java/org/neo4j/tips/sdn/use_dynamic_finder/UseDynamicFinderApplication.java[tags=enable-custom-base-class-for-repositories]
+----
+
+Now you can declare the new `findAllByPropertyValue` in everyone of your repositories that should support it like this:
+
+[source,java,indent=0]
+[[use-the-custom-method]]
+.ThingRepository.java
+----
+include::{examples}/use-dynamic-finder/src/main/java/org/neo4j/tips/sdn/use_dynamic_finder/domain/ThingRepository.java[tags=use-the-custom-method]
+----
+
+Here the type parameter from the base class becomes a concrete `Thing`.
+Put it to use like in the included test:
+
+[source,java,indent=0]
+[[test-the-new-method]]
+.Neo4jRepositoryWithDynamicFinderImplTest.java
+----
+include::{examples}/use-dynamic-finder/src/test/java/org/neo4j/tips/sdn/use_dynamic_finder/support/Neo4jRepositoryWithDynamicFinderImplTest.java[tags=test-the-new-method]
+----
+<1> This is an integration test. The project uses JUnit 5 with the Spring extensions to run it.
+<2> It does only test the Neo4j data access layer. That includes all the repositories, the session factory and also an embedded Neo4j instance.
+<3> It's JUnit 5, we can inject beans into the test class.
+<4> Create some things.
+<5> And use our dynamic finder method.

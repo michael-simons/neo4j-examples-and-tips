@@ -26,19 +26,29 @@ import org.springframework.data.repository.NoRepositoryBean;
 /**
  * @author Michael J. Simons
  */
-@NoRepositoryBean
-public class Neo4jRepositoryWithDynamicFinderImpl<T, ID extends Serializable> extends SimpleNeo4jRepository<T, ID> {
+// tag::custom-base-class-for-repositories[]
+@NoRepositoryBean // <1>
+public class Neo4jRepositoryWithDynamicFinderImpl<T, ID extends Serializable>
+	extends SimpleNeo4jRepository<T, ID> { // <2>
 
-	private final Class<T> domainClass;
+	private final Class<T> domainClass; // <3>
 	private final Session session;
 
-	public Neo4jRepositoryWithDynamicFinderImpl(Class<T> domainClass, Session session) {
-		super(domainClass, session);
+	public Neo4jRepositoryWithDynamicFinderImpl(
+		Class<T> domainClass, Session session
+	) {
+		super(domainClass, session); // <4>
 		this.domainClass = domainClass;
 		this.session = session;
 	}
 
-	public Iterable<T> findAllByPropertyValue(String property, Object value) {
-		return this.session.loadAll(this.domainClass, new Filter(property, ComparisonOperator.EQUALS, value));
+	public Iterable<T> findAllByPropertyValue( // <5>
+		String property, Object value
+	) {
+		return this.session.loadAll(
+			this.domainClass,
+			new Filter(property, ComparisonOperator.EQUALS, value) // <6>
+		);
 	}
 }
+// end::custom-base-class-for-repositories[]

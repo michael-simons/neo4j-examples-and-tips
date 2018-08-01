@@ -26,26 +26,16 @@ import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
 /**
  * @author Michael J. Simons
  */
+// tag::enable-custom-base-class-for-repositories[]
 @SpringBootApplication
 @EnableNeo4jRepositories(repositoryBaseClass = Neo4jRepositoryWithDynamicFinderImpl.class)
-public class UseDynamicFinderApplication implements CommandLineRunner {
+public class UseDynamicFinderApplication {
+	// end::enable-custom-base-class-for-repositories[]
 
 	public static void main(String[] args) {
 		SpringApplication.run(UseDynamicFinderApplication.class, args).close();
 	}
 
-	private final ThingRepository thingRepository;
-
-	public UseDynamicFinderApplication(ThingRepository thingRepository) {
-		this.thingRepository = thingRepository;
-	}
-
-	@Override public void run(String... args) throws Exception {
-		this.thingRepository.save(new Thing("Thing 1", "This is the 1st thing", 9.99));
-		this.thingRepository.save(new Thing("AnotherThing", "This is a thing, too", 9.99));
-		this.thingRepository.save(new Thing("YetAnotherThing", "This is a thing, too", 9.99));
-
-		this.thingRepository.findAllByPropertyValue("description", "This is a thing, too")
-			.forEach(it -> System.out.println(it.getName()));
-	}
+	// tag::enable-custom-base-class-for-repositories[]
 }
+// end::enable-custom-base-class-for-repositories[]
