@@ -16,19 +16,26 @@
 package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot.music;
 
 import java.util.List;
-import java.util.Optional;
 
-import org.springframework.data.neo4j.annotation.Query;
-import org.springframework.data.neo4j.repository.Neo4jRepository;
+import org.springframework.data.neo4j.annotation.QueryResult;
 
 /**
  * @author Michael J. Simons
  */
-public interface CountryRepository extends Neo4jRepository<Country, Long> {
-	Optional<Country> findByCode(String code);
+@QueryResult
+public class CountryStatistics {
 
-	@Query("MATCH (a:Album) - [:RELEASED_BY] -> (b:Band) - [:FOUNDED_IN] -> (:Country {code: :#{#country.code}}) "
-			+ "WITH a AS album ORDER BY album.name "
-			+ "RETURN album.releasedIn AS year, COLLECT(album.name) AS albums ORDER BY year ")
-	List<CountryStatistics> getStatisticsFor(Country country);
+	private Long year;
+
+	private List<String> albums;
+
+	CountryStatistics() {}
+
+	public Long getYear() {
+		return year;
+	}
+
+	public List<String> getAlbums() {
+		return albums;
+	}
 }

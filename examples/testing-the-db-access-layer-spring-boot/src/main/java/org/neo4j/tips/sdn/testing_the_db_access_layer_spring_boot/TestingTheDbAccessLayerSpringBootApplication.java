@@ -142,5 +142,12 @@ public class TestingTheDbAccessLayerSpringBootApplication implements CommandLine
 		System.out.println("---");
 		this.session.query(String.class, "MATCH (:Artist {name: $artist}) <- [:RELEASED_BY] - (a:Album) RETURN a.name",
 			Map.of("artist", "Queen")).forEach(System.out::println);
+
+		countryRepository.getStatisticsFor(greatBritain).forEach(s -> {
+			System.out.println(s.getYear());
+			s.getAlbums().forEach(a -> {
+				System.out.println("\t" + a);
+			});
+		});
 	}
 }
