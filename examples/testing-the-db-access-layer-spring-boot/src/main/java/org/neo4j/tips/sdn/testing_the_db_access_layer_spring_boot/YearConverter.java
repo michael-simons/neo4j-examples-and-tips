@@ -16,6 +16,9 @@
 package org.neo4j.tips.sdn.testing_the_db_access_layer_spring_boot;
 
 import java.time.Year;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalField;
 import java.util.Optional;
 
 import org.neo4j.ogm.typeconversion.AttributeConverter;
@@ -23,14 +26,14 @@ import org.neo4j.ogm.typeconversion.AttributeConverter;
 /**
  * @author Michael J. Simons
  */
-public class YearConverter implements AttributeConverter<Year, Integer> {
+public class YearConverter implements AttributeConverter<Year, Long> {
 	@Override
-	public Integer toGraphProperty(Year value) {
-		return Optional.ofNullable(value).map(Year::getValue).orElse(null);
+	public Long toGraphProperty(Year value) {
+		return Optional.ofNullable(value).map(y -> y.getLong(ChronoField.YEAR)).orElse(null);
 	}
 
 	@Override
-	public Year toEntityAttribute(Integer value) {
-		return Optional.ofNullable(value).map(Year::of).orElse(null);
+	public Year toEntityAttribute(Long value) {
+		return Optional.ofNullable(value).map(v -> Year.of(v.intValue())).orElse(null);
 	}
 }
