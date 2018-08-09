@@ -3,6 +3,7 @@ addons:
     update: true
     packages:
       - graphviz
+      - ditaa
 language: java
 jdk:
 - oraclejdk8
