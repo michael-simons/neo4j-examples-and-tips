@@ -1,0 +1,194 @@
+= What are the building blocks of SDN and OGM?
+Gerrit Meier <gerrit.meier@neo4j.com>, Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:keywords: Spring Data, Spring Data Neo4j, Object Graph Mapping, OGM, @DataNeo4jTest
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+
+[abstract]
+--
+This article introduces the main building blocks you need to understand when dealing with Spring Data Neo4j and Neo4j-OGM.
+It applies regardless whether you're on a Spring Boot application or a plain Spring application.
+--
+
+== Problem
+
+The problem comes in different flavors:
+
+* How is OGM and its components related to SDN?
+* I went to https://start.spring.io[start.spring.io], created a Spring Boot application and all I got was this starter `spring-boot-starter-data-neo4j`. What does it do?
+* Which dependencies do I need to make Spring Data Neo4j work in a plain, old Spring application?
+* Which versions fit together?
+
+== Answer
+
+=== The relation between SDN, OGM and transports
+
+From a high level architecture overview, things look like this
+
+.Building blocks of SDN and OGM
+[[sdn-and-ogm-buildingblocks]]
+[ditaa, sdn-and-ogm-buildingblocks, png]
+----
+/------------------------------------\
+|                                    |
+|          Spring Data Neo4j         |
+|                                    |
+\------------------------------------/
+
+/------------------------------------\
+|                                    |
+|   Neo4j OGM (Object Graph Mapper)  |
+|                                    |
+\------------------------------------/
+
+------------- Transports -------------
+
+/----------\ /----------\ /----------\
+|          | |          | |          |
+| Embedded | |   Bolt   | |   HTTP   |
+|          | |          | |          |
+\----------/ \----------/ \----------/
+
+      |      /----------\      |
+      |      |   Java   |      |
+      |      |          |      |
+      |      |  Driver  |      |
+      |      \----------/      |
+      |           |            |
+      |           |            |
+      |           |            |
+      |           v            |
+      |      /----------\      |
+      |      |          |      |
+      |      |          |      |
+      +----> |   Neo4j  | <----+
+             |          |
+             |          |
+             \----------/
+----
+
+Spring Data Neo4j::
+    Spring Data Neo4j is one of several different store implementations of http://projects.spring.io/spring-data/[Spring Data].
+    Spring Datass mission is to provide a familiar and consistent, Spring-based programming model for data access while still retaining the special traits of the underlying data store.
+Neo4j OGM::
+    Neo4j OGM is a _Object Graph Mapper_.
+    It maps the nodes, relationships and properties stored inside Neo4j to Java Objects.
+    It acts on the same architectural level as https://en.wikipedia.org/wiki/Hibernate_(framework)[Hibernate] does for relational databases.
+    Neo4j generates Cypher queries to read and write your Graph data (at least, most of the time).
+    You're domain classes lives at this layer.
+    You'll find classes annoted with `@NodeEntity` for things that have an ID and a live cycle and `@QueryResult` for data transfer objects (DTOs) and projections.
+    Everything inside OGM happens in transactions.
+Transports::
+    The next lower level is a transport layer.
+    Neo4j OGM can use different transports.
+    Sometimes Neo4j will speak of them as drivers but that is not totally accurate.
+    * Embedded: Uses an embedded Neo4j instance, OGM transport mainly uses the internal Database Api
+    * Bolt: This transport actually uses a real driver, the https://neo4j.com/developer/java/#neo4j-java-driver[Neo4j Java Driver].
+    The Java Driver works pretty much on the same level as https://en.wikipedia.org/wiki/Java_Database_Connectivity[JDBC].
+    * HTTP: The HTTP transport was the first to be available. Neo4j OGM uses Neo4js REST endpoints.
+
+=== Spring Boot
+
+If you go to start.spring.io and generate a Neo4j Project (use this https://start.spring.io/starter.zip?type=maven-project&language=java&bootVersion=2.0.4.RELEASE&baseDir=demo&groupId=com.example&artifactId=demo&name=demo&description=Demo+project+for+Spring+Boot&packageName=com.example.demo&packaging=jar&javaVersion=1.8&autocomplete=&generate-project=&style=data-neo4j[link] to get one), you'll end up with the following dependencies
+
+* Spring Data Commons
+* Spring Data Neo4j
+* Neo4j OGM (Core)
+* Neo4j Bolt
+* Neo4j Java Driver
+
+The dependencies are configured through Spring Boots Starter mechanism, explained https://speakerdeck.com/michaelsimons/its-a-kind-of-magic-custom-spring-boot-starter[here] and https://www.youtube.com/watch?v=wSWA63rZfGo[here].
+
+This is a setup in which expects you to have a local instance of Neo4j listening on port 7687 for Bolt connections.
+The connection can be configured through `spring.data.neo4j.uri`.
+
+The dependencies are configured in such ways that you can bring in the additional embedded driver and the embedded Neo4j instance without running into conflicts:
+
+[source,xml]
+[[using-an-embedded-instance]]
+.Maven build file with additional dependencies for using the embedded transport
+----
+<dependency>
+	<groupId>org.neo4j</groupId>
+	<artifactId>neo4j-ogm-embedded-driver</artifactId>
+	<version>${neo4j-ogm.version}</version> // <1>
+</dependency>
+<dependency>
+	<groupId>org.neo4j</groupId>
+	<artifactId>neo4j</artifactId>
+	<version>3.4.5</version>
+	<scope>runtime</scope> // <2>
+</dependency>
+----
+<1> Use the same version that Spring Boot uses for OGM itself
+<2> The database itself is only needed during runtime
+
+There's one catch, though: If the embedded driver is on the classpath, Spring Data Neo4j autoconfiguration will prefer it over Bolt.
+You can disable this by `spring.data.neo4j.embedded.enabled=false` or by using it only inside the `test`scope.
+This comes in pretty handy if you use the `@DataNeo4jTest` test slice that is new with Spring Boot 2.
+It will automatically use the embedded instance for executing your tests against the database inside transactions that are rolled back after the tests.
+
+=== And without Spring Boot?
+
+We highly recommend to start new Spring application based on Spring Boot.
+In contrast what you might have heard, Spring Boot is not only about microservices.
+
+However, there are situations where you find yourself in a plain Spring situation.
+You'll need at last:
+
+* `org.springframework.data:spring-data-neo4j`
+* `org.neo4j:neo4j-ogm-core`
+* A matching transport, like
+** `org.neo4j:neo4j-ogm-bolt-driver`
+** `org.neo4j:neo4j-ogm-embedded-driver`
+
+They all bring their necessary, transitive dependencies.
+You have to make sure though that they fit into their surroundings.
+That is, you cannot run any Spring Data release train after "Kay" (corresponds to Spring Data Neo4j 5.0.x) with Spring 4 or earlier.
+
+=== Which versions fit together?
+
+From the Spring Data commons documentation:
+
+[quote, http://projects.spring.io/spring-data/]
+____
+
+Spring Data is an umbrella project consisting of independent projects with, in principle, different release cadences. To manage the portfolio, a BOM (Bill of Materials - see this example) is published with a curated set of dependencies on the individual project. The release trains have names, not versions, to avoid confusion with the sub-projects.
+____
+
+As of today Spring Data Neo4j 5.0.x and 5.1.x are under active development.
+That means:
+
+* Release train https://en.wikipedia.org/wiki/Alan_Kay[Kay]
+** Spring Data Neo4j 5.0.x
+** OGM 3.0.x
+* Release train https://en.wikipedia.org/wiki/Ada_Lovelace[Lovelace]
+** Spring Data Neo4j 5.1.x
+** OGM 3.1.x
+
+As of writing, Spring Boot 2.0.x picks up the Kay release train but OGM 3.0.x.
+In case this causes any trouble in edge cases, add `<neo4j-ogm.version>3.0.4</neo4j-ogm.version>` to your POM or `neo4j-ogm.version=3.0.4` to `gradle.properties`.
+Both Kay and Lovelace requires Spring 5 and therefore Spring Boot 2.
+
+For Spring Boot 1.5.x you'll have to use the Ingalls release train, referring to SDN 4.2.x and OGM 2.1.x.
+To connect to older versions of Neo4j (2.3, 3.0 and 3.1), you have to stick with OGM 2.1.x and therefore with SDN 4.2.x as well.
+
+OGM 3.x supports Neo4j 3.x.
+
+=== Further reading
+
+* https://twitter.com/meistermeier[Gerrits] presentation about SDN and OGM at Spring I/O 2018: https://youtu.be/M15wR5YA-lc[Video recording] and https://speakerdeck.com/meistermeier/time-to-graph-up-with-spring-data-neo4j[Slides]
+* Checkout the type conversions that may be applied by the Java driver link:{published-ref}/understand_the_type_system.html[Understand the Neo4j Cypher and OGM type system]
+* About the https://spring.io/blog/2017/10/02/spring-data-release-train-kay-goes-ga[Kay release train]
+* Announcing the first release candidate of https://spring.io/blog/2018/07/26/spring-data-lovelace-rc1-available[Spring Data Lovelace]
+
+
+
+// TODO Migration from GraphDatabase to SessionFactory

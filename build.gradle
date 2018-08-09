@@ -19,8 +19,9 @@ tasks.withType(AsciidoctorTask) { docTask ->
     gemPath = jrubyPrepare.outputDir
 
     attributes \
-          'examples-gh-ref': 'https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/',
-          'examples-gh-ref-blob': 'https://github.com/michael-simons/neo4j-sdn-ogm-tips/blob/master/examples/',
+          'examples-gh-ref': 'https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples',
+          'examples-gh-ref-blob': 'https://github.com/michael-simons/neo4j-sdn-ogm-tips/blob/master/examples',
+          'published-ref': 'https://michael-simons.github.io/neo4j-sdn-ogm-tipse',
           'examples': "$projectDir/examples",
           'allow-uri-read': true,
           'imagesdir': 'images'
