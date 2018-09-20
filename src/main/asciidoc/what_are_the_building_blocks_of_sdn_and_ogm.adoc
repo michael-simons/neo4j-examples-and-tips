@@ -131,7 +131,7 @@ The dependencies are configured in such ways that you can bring in the additiona
 <2> The database itself is only needed during runtime
 
 There's one catch, though: If the embedded driver is on the classpath, Spring Data Neo4j autoconfiguration will prefer it over Bolt.
-You can disable this by `spring.data.neo4j.embedded.enabled=false` or by using it only inside the `test`scope.
+You can disable this by `spring.data.neo4j.embedded.enabled=false` or by using it only inside the `test` scope.
 This comes in pretty handy if you use the `@DataNeo4jTest` test slice that is new with Spring Boot 2.
 It will automatically use the embedded instance for executing your tests against the database inside transactions that are rolled back after the tests.
 
