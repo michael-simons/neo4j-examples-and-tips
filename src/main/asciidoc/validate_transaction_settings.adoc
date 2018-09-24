@@ -35,7 +35,7 @@ Consider switching the validateExistingTransactions flag to true on your transac
 This non-lenient mode also rejects read-only mismatches (that is, an inner read-write transaction that tries to participate in a read-only outer scope).
 ____
 
-The Neo4j specific `Neo4jTransactionManager` extends from the `AbstractPlatformTransactionManager`and thus supports enabling validation.
+The Neo4j specific `Neo4jTransactionManager` extends from the `AbstractPlatformTransactionManager` and thus supports enabling validation.
 
 The following configuration shown in <<SetupValidatingTransactionManager>> can be applied to both a purely Spring Data Neo4j configuration and in a Spring Boot based scenario.
 The later provides you with the `SessionFactory` while you would have to take care of it withouth Spring Boot:
@@ -44,7 +44,7 @@ The later provides you with the `SessionFactory` while you would have to take ca
 [[SetupValidatingTransactionManager]]
 .TransactionManagerConfiguration.java
 ----
-include::{examples}validate-transaction-settings/src/main/java/org/neo4j/tips/sdn/validate_transaction_settings/TransactionManagerConfiguration.java[tags=provide-validating-transaction-manager]
+include::{examples}/validate-transaction-settings/src/main/java/org/neo4j/tips/sdn/validate_transaction_settings/TransactionManagerConfiguration.java[tags=provide-validating-transaction-manager]
 ----
 
 Given a "broken" service like the one in <<BrokenService>>, the transaction manager refuses to execute the method.
