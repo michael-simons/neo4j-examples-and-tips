@@ -1,0 +1,69 @@
+= Validate your Neo4j transaction settings
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:keywords: Spring Data, Spring Data Neo4j, Repositories, Transactions
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+
+[abstract]
+--
+Spring transactions can be declared read-only when your code reads but does not modify data.
+Read-only transactions can be a useful optimization in some cases, such as when you use Hibernate or Neo4j OGM.
+With Spring Data Neo4j and Neo4j OGM read-only transactions are an integral part of causal cluster.
+They don't prevent write queries from happening.
+However, it's often nice to check if appropriate settings are used throughout your architecture.
+--
+
+== Problem
+
+I want to make sure that services with transactions marked as `@Transactional(readOnly = true)` don't execute nested write transactions.
+
+== Solution
+
+To quote the Spring Framework documentation:
+
+[quote, Spring Framework Documentation]
+____
+By default, a participating transaction joins the characteristics of the outer scope, silently ignoring the local isolation level, timeout value, or read-only flag (if any).
+Consider switching the validateExistingTransactions flag to true on your transaction manager if you want isolation level declarations to be rejected when participating in an existing transaction with a different isolation level.
+This non-lenient mode also rejects read-only mismatches (that is, an inner read-write transaction that tries to participate in a read-only outer scope).
+____
+
+The Neo4j specific `Neo4jTransactionManager` extends from the `AbstractPlatformTransactionManager`and thus supports enabling validation.
+
+The following configuration shown in <<SetupValidatingTransactionManager>> can be applied to both a purely Spring Data Neo4j configuration and in a Spring Boot based scenario.
+The later provides you with the `SessionFactory` while you would have to take care of it withouth Spring Boot:
+
+[source,java,indent=0]
+[[SetupValidatingTransactionManager]]
+.TransactionManagerConfiguration.java
+----
+include::{examples}validate-transaction-settings/src/main/java/org/neo4j/tips/sdn/validate_transaction_settings/TransactionManagerConfiguration.java[tags=provide-validating-transaction-manager]
+----
+
+Given a "broken" service like the one in <<BrokenService>>, the transaction manager refuses to execute the method.
+
+[source,java,indent=0]
+[[BrokenService]]
+.BrokenService.java
+----
+include::{examples}/validate-transaction-settings/src/main/java/org/neo4j/tips/sdn/validate_transaction_settings/BrokenService.java[tags=broken-service]
+----
+<1> This is broken. `#save` is pretty obvious a write transaction.
+
+The following Spring Boot test demonstrate the desired behaviour (it's a https://junit.org[JUnit 5] test, so we can autowire our dependency with constructor injection):
+
+[source,java,indent=0]
+[[SpringBootTest]]
+.BrokenServiceTest.java
+----
+include::{examples}/validate-transaction-settings/src/test/java/org/neo4j/tips/sdn/validate_transaction_settings/BrokenServiceTest.java[tags=broken-service-test]
+----
+
+The full project with all sources and build script is available here: link:{examples-gh-ref}/validate-transaction-settings[`validate-transaction-settings`].
