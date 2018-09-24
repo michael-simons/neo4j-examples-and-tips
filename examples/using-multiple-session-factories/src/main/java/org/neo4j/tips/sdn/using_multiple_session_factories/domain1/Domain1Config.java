@@ -47,7 +47,7 @@ public class Domain1Config {
 	// tag::using-default-properties[]
 	@Primary
 	@Bean
-	@ConfigurationProperties("peng")
+	@ConfigurationProperties("spring.data.neo4j")
 	public Neo4jProperties neo4jPropertiesDomain1() {
 		return new Neo4jProperties();
 	}
