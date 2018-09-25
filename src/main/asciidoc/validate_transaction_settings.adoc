@@ -37,7 +37,7 @@ ____
 
 The Neo4j specific `Neo4jTransactionManager` extends from the `AbstractPlatformTransactionManager` and thus supports enabling validation.
 
-<<SetupValidatingTransactionManager>> shows the most easy solution, applicable to a Spring Boot based application.
+<<SetupValidatingTransactionManagerSpringBoot>> shows the most easy solution, applicable to a Spring Boot based application.
 It uses `org.springframework.boot.autoconfigure.transaction.PlatformTransactionManagerCustomizer` to hook into the automatic creation of a transaction manager and customizes it.
 
 [source,java,indent=0]
@@ -52,7 +52,7 @@ You can use the automatically configured `SessionFactory` for creating the trans
 <<SetupValidatingTransactionManagerPlainSDN>> shows one way of doing that
 
 [source,java,indent=0]
-[[SetupValidatingTransactionManagerSpringBoot]]
+[[SetupValidatingTransactionManagerPlainSDN]]
 .TransactionManagerConfiguration.java (Without Spring Boot)
 ----
 include::{examples}/validate-transaction-settings/src/main/java/org/neo4j/tips/sdn/validate_transaction_settings/TransactionManagerConfigurationPlainSDN.java[tags=provide-validating-transaction-manager]
