@@ -37,17 +37,31 @@ ____
 
 The Neo4j specific `Neo4jTransactionManager` extends from the `AbstractPlatformTransactionManager` and thus supports enabling validation.
 
-The following configuration shown in <<SetupValidatingTransactionManager>> can be applied to both a purely Spring Data Neo4j configuration and in a Spring Boot based scenario.
-The later provides you with the `SessionFactory` while you would have to take care of it withouth Spring Boot:
+<<SetupValidatingTransactionManager>> shows the most easy solution, applicable to a Spring Boot based application.
+It uses `org.springframework.boot.autoconfigure.transaction.PlatformTransactionManagerCustomizer` to hook into the automatic creation of a transaction manager and customizes it.
 
 [source,java,indent=0]
-[[SetupValidatingTransactionManager]]
-.TransactionManagerConfiguration.java
+[[SetupValidatingTransactionManagerSpringBoot]]
+.TransactionManagerConfiguration.java (The Spring Boot way)
 ----
 include::{examples}/validate-transaction-settings/src/main/java/org/neo4j/tips/sdn/validate_transaction_settings/TransactionManagerConfiguration.java[tags=provide-validating-transaction-manager]
 ----
 
-Given a "broken" service like the one in <<BrokenService>>, the transaction manager refuses to execute the method.
+In case you're on a plain Spring and Spring Data Neo4j based application, you have to instantiate the transaction manager yourself.
+You can use the automatically configured `SessionFactory` for creating the transaction manager.
+<<SetupValidatingTransactionManagerPlainSDN>> shows one way of doing that
+
+[source,java,indent=0]
+[[SetupValidatingTransactionManagerSpringBoot]]
+.TransactionManagerConfiguration.java (Without Spring Boot)
+----
+include::{examples}/validate-transaction-settings/src/main/java/org/neo4j/tips/sdn/validate_transaction_settings/TransactionManagerConfigurationPlainSDN.java[tags=provide-validating-transaction-manager]
+----
+
+NOTE: Those two configurations are not meant to be used together in one project!
+
+
+Given a "broken" service like the one in <<BrokenService>>, the transaction manager now refuses to execute the method.
 
 [source,java,indent=0]
 [[BrokenService]]

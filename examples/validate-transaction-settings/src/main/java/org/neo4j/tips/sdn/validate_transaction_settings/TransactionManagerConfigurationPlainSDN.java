@@ -16,24 +16,34 @@
 package org.neo4j.tips.sdn.validate_transaction_settings;
 
 // tag::provide-validating-transaction-manager[]
-import org.springframework.boot.autoconfigure.transaction.PlatformTransactionManagerCustomizer;
+import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.neo4j.transaction.Neo4jTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
 // end::provide-validating-transaction-manager[]
 
 /**
  * @author Michael J. Simons
  */
+@Profile("plain-sdn-scenario")
 // tag::provide-validating-transaction-manager[]
 @Configuration
-class TransactionManagerConfiguration {
+class TransactionManagerConfigurationPlainSDN {
+
+	private final SessionFactory sessionFactory;
+
+	public TransactionManagerConfigurationPlainSDN(SessionFactory sessionFactory) {
+		this.sessionFactory = sessionFactory;
+	}
 
 	@Bean
-	public PlatformTransactionManagerCustomizer<AbstractPlatformTransactionManager> transactionManagementConfigurer() {
-		return (AbstractPlatformTransactionManager transactionManager) -> transactionManager
-			.setValidateExistingTransaction(true);
+	public PlatformTransactionManager transactionManager() {
+		Neo4jTransactionManager transactionManager = new Neo4jTransactionManager(sessionFactory);
+		transactionManager.setValidateExistingTransaction(true);
+		return transactionManager;
 	}
 }
 // end::provide-validating-transaction-manager[]
