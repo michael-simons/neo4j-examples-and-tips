@@ -1,0 +1,269 @@
+= Neo4j OGM 3.1.3 and Spring Data Lovelace went GA
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:lang: de
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:xrefstyle: short
+:tabsize: 4
+
+There has been nearly a year since our last https://neo4j.com/blog/spring-data-neo4j-5-0-release/[post] about the things happening with Neo4j in "Spring World". Time did not stand still and the Spring Data Neo4j / Neo4j-OGM Team has been working on improvements and building new features based on the foundations laid out with SDN 5.0 and OGM 3.0 last year.
+
+My name is https://twitter.com/rotnroll666[Michael Simons], I am a Java Champion and the author of the http://springbootbuch.de[German book about Spring Boot 2 and Spring 5]. I joined the Spring Data Neo4j team in July 2018.
+Together with https://twitter.com/meistermeier[Gerrit Meier] I have been working on the latest release of https://neo4j.com/docs/ogm-manual/current/[Neo4j-OGM] which is 3.1.3.
+Neo4j-OGM is the underlying Object Mapper technology used by https://projects.spring.io/spring-data-neo4j/[Spring Data Neo4j].
+
+While Neo4j-OGM 3.1.3 has been released on https://community.neo4j.com/t/neo4j-ogm-releases/1629[September 19th] prior to our own https://graphconnect.com[GraphConnect] in New York, Spring Data Neo4j 5.1 has been released some days later as part of https://spring.io/blog/2018/09/21/spring-data-lovelace-ga-released[Spring Data's Lovelace release train].
+
+Time to have a look what's new in the most recent versions.
+
+
+== What's new in Neo4j-OGM 3.1.3
+
+Let's have a look at the new features and improvements in the object graph mapper itself.
+Neo4j OGM can be used standalone as well, for example with http://micronaut.io[Micronaut], a framework especially dedicated to the creation of microservices.
+It also works well when Spring Data's repository abstraction or the eventing system is not needed or wanted.
+This could be the case in applications dealing with a large number of different nodes, that are not clearly part of an aggregate roots. Spring Data  https://stackoverflow.com/questions/21265262/are-you-supposed-to-have-one-repository-per-table-in-jpa/21277087#21277087[has never be designed] to be used in such a way that one declares a repository per entity.
+
+
+[[ImprovedPostLoadMechanism]]
+=== Improved `@PostLoad` mechanism
+
+Each `@NodeEntity` can have one method annotated with `@PostLoad`.
+Neo4j-OGM will call this method once the entity is loaded from the database.
+This is useful for composed information or other initialization methods that should only be called after the object has been fully populated.
+
+[source,java]
+.SomeEntity.java
+----
+@NodeEntity
+public class SomeEntity {
+
+	private transient String computedInformation;
+	
+	@PostLoad
+	void computeTransientInformation() {
+		this.computedInformation = "Whatever";
+	}
+}
+----
+
+With Neo4j-OGM 3.1.3 `@PostLoad` requirements are the same as https://en.wikipedia.org/wiki/JSR_250[JSR 250] `@PostConstruct` has, especially:
+
+* The method on which `@PostConstruct` is applied _may_ be public, protected, package private or private.
+* In general, the method *must not* be final. However, other specifications are permitted to relax this requirement on a per-component basis.
+
+This change allows a better encapsulation of business logic in you aggregate roots.
+In the previous versions, `@PostLoad` methods needed to be public and could not be final.
+This leads to situations where those methods could be called from the outside or overwritten in ways that contradict your domain.
+
+There's one situation where you might be able to actually want to overwrite `@PostLoad` methods:
+Class hierarchies.
+
+
+=== Improved handling of class hierarchies
+
+Many people like the approach of introducing some abstract base classes for their entities.
+We have seen this approach with JPA and also a lot with Neo4j-OGM.
+Common arguments for doing this are keeping common attributes like the `id`-Attribute or auditing information in a shared base class as show in <<ExampleForSharedBaseEntity>>.
+
+[source,java]
+[[ExampleForSharedBaseEntity]]
+.AbstractAuditableBaseEntity.java
+----
+public abstract class AbstractAuditableBaseEntity {
+	@Id
+	@GeneratedValue
+	private Long id;
+
+	@CreatedDate // <1>
+	private LocalDate createdAt;
+
+	@LastModifiedDate
+	private LocalDate updatedAt;
+
+	public LocalDate getCreatedAt() {
+		return createdAt;
+	}
+
+	public LocalDate getUpdatedAt() {
+		return updatedAt;
+	}
+}
+----
+<1> Those are annotations from Spring Data Neo4j, more about them later
+
+This `AbstractBaseEntity` provides all cruft needed: An generated id and some auditing.
+In previous versions of Neo4j-OGM one had to use `@NodeEntity` on this class as well to make our auto index manager work.
+
+This introduced meaningless labels (either the name of the class or some other artificial label made up by you).
+Now the logic works as stated in the documentation: Abstract classes in the hierarchy of an entity don't contribute a label to nodes.
+The auto index manager creates indexes in such a way that they ensure uniques across subclasses, if there are intermediate classes (abstract or not) with labels in the hierarchy.
+
+
+=== Improvements on Neo4j-OGM Filters
+
+Neo4j-OGM Filters can now traverse relationships of entities to query their attributes.
+We call this nested property filter support.
+The equal filter can now do a case-insensitive equals comparison without resorting to regular expressions.
+
+
+=== Miscellaneous
+
+No software is without bugs.
+We fixed issues around array conversions, prevent possible accidental deletion of all nodes when a query doesn't contain any label and more.
+Also, we started polishing code and deprecating unused things.
+In short: We are trying to create a clean state to be prepared for new features.
+
+All these things are used in the latest and greatest installment of Spring Data Neo4j, called "Lovelace" after famous https://en.wikipedia.org/wiki/Ada_Lovelace[Ada Lovelace].
+Ada Lovelace was the first to recognize the potential of a general computing machine by publishing algorithms for a - back then - only proposed mechanical computer, the https://en.wikipedia.org/wiki/Analytical_Engine[Analytical engine].
+
+
+== What's new in Spring Data Neo4j 5.1 "Lovelace"
+
+As you might know, Spring Data itself is heavily inspired by Eric Evans' famous book "Domain Driven Design".
+The idea of repository and aggregate roots are just some of the ideas of this book.
+Spring Data is much more than just helpful https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.query-methods[derived finder methods].
+There is support for an eventing system, auditing and more.
+
+Modeling better domain models is part of SDN 5.1, together with all the things described in <<ImprovedPostLoadMechanism>>.
+
+
+=== Persistence constructors
+
+Extending `AbstractAuditableBaseEntity` from <<ExampleForSharedBaseEntity>> to model a musical artist as in <<ArtistEntity>>, you'll notice the missing default constructor:
+
+[source,java]
+[[ArtistEntity]]
+.ArtistEntity.java
+----
+@NodeEntity("Artist")
+public class ArtistEntity extends AbstractAuditableBaseEntity {
+
+	@Index(unique = true)
+	private String name;
+
+	public ArtistEntity(String name) {
+		this.name = name;
+	}
+
+	public String getName() {
+		return name;
+	}
+}
+----
+
+Using Spring Data's common infrastructure, you no longer need to provide useless default constructors in your domain.
+If there are several meaningful constructors from the business side of things, you have to annotate one of them with `@PersistenceConstructor` as shown in <<BandEntity>>.
+That way, you make clear which constructor is to be used when retrieving nodes from the database.
+
+[source,java]
+[[BandEntity]]
+.BandEntity.java
+----
+@NodeEntity("Band")
+public class BandEntity extends ArtistEntity {
+
+	@Relationship("FOUNDED_IN")
+	private CountryEntity foundedIn;
+
+	@Relationship("HAS")
+	private List<MemberEntity> member = new ArrayList<>();
+
+	public BandEntity(String name) {
+		this(name, null);
+	}
+
+	@PersistenceConstructor
+	public BandEntity(String name, CountryEntity foundedIn) {
+		super(name);
+		this.foundedIn = foundedIn;
+	}
+}
+----
+
+
+=== Auditing support
+
+As mentioned in <<ExampleForSharedBaseEntity>>, the example uses Spring Data Neo4j features.
+`org.springframework.data.annotation.CreatedDate` and `org.springframework.data.annotation.LastModifiedDate` are SDN annotations to mark attributes as targets for audit-informations.
+Those are enabled by providing a Spring `@Configuration` class like in <<EnabledAuditing>>.
+
+[source,java]
+[[EnabledAuditing]]
+.Neo4jConfiguration.java
+----
+@Configuration
+@EnableNeo4jAuditing // <1>
+public class Neo4jConfiguration {
+}
+----
+<1> Turn on auditing
+
+Now those fields are automatically populated on creation and updates of the node in question.
+There are many more features like this that make a compelling reason to use Spring Data Neo4j for accessing Neo4j in your Spring projects.
+
+
+=== Miscellaneous
+
+SDN 5.1 directly uses Neo4j-OGM's new features, like case-insensitive queries by supporting `IgnoreCase` in derived finder methods and traversing nested properties.
+For example you can use a derived method as shown in <<DerivedQueryMethodExample>> to retrieve all `Bands` from Germany with a call like `bandRepository.findAllByFoundedInCodeIgnoreCase("de").forEach(System.out::println)`.
+
+[source,java]
+[[DerivedQueryMethodExample]]
+.BandRepository.java
+----
+public interface BandRepository extends Neo4jRepository<BandEntity, Long> {
+	List<BandEntity> findAllByFoundedInCodeIgnoreCase(String countryCode);
+}
+----
+
+The newly developed support for https://docs.spring.io/spring/docs/5.1.0.RELEASE/spring-framework-reference/core.html#expressions[Springs Expression language] in annotated `@Query` methods in SDN repositories has the same goal:
+Improving your repository design.
+<<SpelExample>> may seem a bit constructed, but here SpEL is used to pass parameters to a query that are currently not directly supported.
+
+[source,java]
+[[SpelExample]]
+.YearRepository.java
+----
+public interface YearRepository extends Neo4jRepository<YearEntity, Long> {
+	@Query("MATCH (y:Year {value: :#{#year.value}}) RETURN y")
+	Optional<YearEntity> findOneByValue(Year year);
+}
+----
+
+Enterprise customers can now use the `@UseBookmark` annotation in composed annotations.
+Composed annotations are meta annotations that can be used to express things in a language that's better suited for a specific application than a generic `@UseBookmark` or similar.
+
+
+== Spring Boot
+
+Today one can claim that new Spring projects should be started with Spring Boot.
+The easiest way to do this is going to https://start.spring.io[start.spring.io], select all the dependencies you need, especially _Neo4j_.
+The result is a project skeleton defined to best practices from more than 2 years.
+As said before: Spring Boot is not only about microservices, but about all developments with Spring.
+
+From Spring Boot 2.0.6 the reference documentation has been updated and refined to great extends regarding Neo4j.
+Read it here: https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-nosql.html#boot-features-neo4j[Spring Boot and Neo4j].
+
+Also, starting with Boot 2.0.6, one can omit the Neo4j-OGM version on the embedded driver, in case it should be included.
+It will be enough to declare `org.neo4j:neo4j-ogm-embedded-driver` as dependency.
+
+With Spring Boot 2.1, our enterprise customers don't need to declare their own `BookmarkManager` themselves anymore if Caffeine cache is on the class path.
+Our starter will take care of this as well.
+
+
+== Outlook
+
+The Spring Data Neo4j team has started to use performance optimizations that are now possible in Spring Data in regard of non-eager initialization of beans and will continue to invest this.
+Recent updates to the class path scanner that is used to determine classes to be recognized by Neo4j-OGM are also investigated.
+We are also working on an improved support of Neo4j's newer datatypes, especially the  spatial types that have been introduced together with the https://medium.com/neo4j/whats-new-in-neo4j-spatial-features-586d69cda8d0[spatial features of 3.4].
+
+The Spring Data Neo4j / Neo4j-OGM Team is ready to incorporate all future developments regarding https://en.wikipedia.org/wiki/Reactive_programming[reactive Java drivers] for Neo4j that might be available in the future.
+The common groundwork in Spring Data has been around for some time now and is ready to be used in SDN.
+
+The examples in this article are from my project "bootiful-music" which you can find at https://github.com/michael-simons/bootiful-music[GitHub], especially look at the `knowledge` module.
+The whole project will serve as an example for upcoming Spring Data Neo4j related talks.
