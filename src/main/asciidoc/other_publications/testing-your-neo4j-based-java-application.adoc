@@ -1,0 +1,36 @@
+= Testing your Neo4j-based Java application
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:lang: de
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:xrefstyle: short
+:tabsize: 4
+
+In this post I'm gonna present different approaches how you can test your Neo4j-based application.
+As you might know, Neo4j can be accessed from a variety of languages - Go, Python and JavaScript being some of them - this post focuses on Java based applications.
+I'm an engineer on Neo4j's Spring Data team, so this is where my focus usually is.
+
+There are several aspects that needs to be considered while making the decision for or against a certain test setup.
+
+* Are you developing a stored procedure for the database itself?
+* Are you using the official https://github.com/neo4j/neo4j-java-driver[Java driver] to issue Cypher-queries directly over Bolt?
+* Are you using an Object-Graph-Mapping library like https://github.com/neo4j/neo4j-ogm[Neo4j-OGM] to build an application-side domain model?
+* Did you add https://github.com/spring-projects/spring-data-neo4j[Spring Data Neo4j] to the mix to take advantage of the Spring ecosystem?
+
+I'll cover those four scenarios which allow for a good comparision of the options we have at hand for testing queries or a domain model against the Neo4j database.
+
+I'm gonna use https://junit.org/junit5/[JUnit 5] in all scenarios.
+At the beginning of 2019, there's hardly any reason not to use JUnit 5 in new projects.
+All Neo4j specific techniques demonstrated in this post can be be applied some adaption to JUnit 4 as well.
+
+== Neo4j Test-Server
+
+== Neo4j Test-Server or Container
+
+== Neo4j Test-Server or Container with OGM, different modes
+
+== DataNeo4jTest
