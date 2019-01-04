@@ -27,10 +27,106 @@ I'm gonna use https://junit.org/junit5/[JUnit 5] in all scenarios.
 At the beginning of 2019, there's hardly any reason not to use JUnit 5 in new projects.
 All Neo4j specific techniques demonstrated in this post can be be applied some adaption to JUnit 4 as well.
 
-== Neo4j Test-Server
+NOTE: The examples in this article will all deal with spatial values and the functions defined there on.
+The spatial datatype `point` is new since Neo4j 3.4 and Neo4j-OGM will support it out-of-the-box in Neo4j-OGM 3.2 and SDN 5.2.
 
-== Neo4j Test-Server or Container
+== Neo4j test-harness
 
-== Neo4j Test-Server or Container with OGM, different modes
+=== Testing custom Neo4j extensions
 
-== DataNeo4jTest
+Neo4j can be extended with https://neo4j.com/docs/java-reference/3.5/extending-neo4j/procedures/[custom procedures] and functions.
+One can also add https://neo4j.com/docs/java-reference/3.5/extending-neo4j/http-server-extensions/[unmanaged server extensions] to Neo4j, that expose arbitrary JAX-RS endpoints from the database.
+In all three of them one can interact directly with the database API for all kind of functions that require direct interaction with the kernel for the highest degree of performance or flexibility.
+
+This is where the Neo4j test-harness comes in.
+The test-harness is a special variant of an embedded Neo4j instance with hooks to provide test fixtures and adding your custom procedures and extensions.
+
+Given the following user defined procedure, which is part of this link:{examples-gh-ref}/using-the-test-harness[project]:
+
+[source,java]
+[[location-conversion]]
+.LocationConversion.java, Converts legacy-style locations into proper points.
+----
+include::{examples}/using-the-test-harness/src/main/java/org/neo4j/tips/testing/using_the_test_harness/LocationConversion.java[tags=location-conversion]
+----
+
+The `LocationConversion` operates directly on the graphdatabase nodes for optimal performance.
+It is meant to be run server side with a call like this: `CALL examples.convertLegacyLocation(nodes)`.
+If you followed the instructions on how to package your stored procedures you would have ended up with a JAR file containing the executable code.
+Do you want to repackage it, stop your server and upload it everytime for testing it?
+Propably not.
+
+Enter the the test-harness:
+
+[source,xml]
+[[test-harness-dep]]
+.pom.xml, Dependencies for test-harness
+----
+include::{examples}/using-the-test-harness/pom.xml[tags=test-harness-dep,indent=0]
+----
+
+There's a variant `neo4j-harness-enterprise` that matches the commercial enterprise version of Neo4j, too.
+
+With JUnit 5 you don't need a `@Rule` to start it as JUnit 5 supports non-static initialization methods for tests when the lifecycle of the test is set to `PER_CLASS`.
+
+[source,java]
+[[test-harness-setup]]
+.GeometryToolboxTest.java, Setup of the test-harness
+----
+include::{examples}/using-the-test-harness/src/test/java/org/neo4j/tips/testing/using_the_test_harness/GeometryToolboxTest.java[tags=test-harness-setup]
+----
+<1> The lifecycle of this test should be per class, so that `#initializeNeo4j`, annotated with `@BeforeAll` runs exactly once.
+<2> Two variables to hold a reference to the server during all tests.
+<3> `initializeNeo4j` runs before all tests and uses a builder to create a test server, the builder provides interfaces for registering
+<4> custom procedures and functions as well as
+<5> fixtures, either through Cypher statements like here, files or even functions.
+<6> finally, start the server
+<7> and after all test, stop it
+
+Now it's really easy to use the server provided by the harness.
+I have added the Java-Driver as test-dependency to the project and open up a connection as against a standalone server-instance or cluster:
+
+[source,java]
+[[test-harness-usage1]]
+.GeometryToolboxTest.java, Example usage of the test server
+----
+include::{examples}/using-the-test-harness/src/test/java/org/neo4j/tips/testing/using_the_test_harness/GeometryToolboxTest.java[tags=test-harness-usage1,indent=0]
+----
+
+=== Using the test-harness for application level tests
+
+Technically, the test-harness and the embedded server, reachable through `ServerControls`, can be used for application-level-testing.
+It exposes next through the Bolt-URI the HTTP-URI as well as the embedded graph itself.
+Both URIs use random, free ports and thus allow tests in parallel.
+The `ServerControls` are an autoclosable resource and as they start relatively quick, they can be fired up multiple times.
+
+It comes with a price, however:
+In the end it is a full blown Neo4j instance with all the dependencies.
+You might not want those dependencies in your application, not even in the test scope.
+The other disadvantage is the fact, that you're running the database inside the same JVM as your application.
+Most of the time this is not what production looks like.
+While being on the same JVM is the correct place for stored procedures, it is not for applications.
+Using an embedded database for testing your application code might lead you into a false sense of safety.
+
+=== Summary
+
+When writing custom extensions, you want a quick feedback loop for all of your tests.
+You're also very close to the server in all cases.
+The test-harness provides you with the fastest feedback loop possible and doesn't expose your code to more than you actually need.
+Your code is right there at the server level.
+The test-harness and the embedded, customizable instance of Neo4j should be your first choice when testing custom Neo4j extensions.
+It is also a good choice for infrastructure code like Neo4j-OGM and Spring Data Neo4j itself.
+Neo4j-OGM runs against an embedded graph, over Bolt and HTTP, so it must be tested against all of those.
+The test-harness provides good support for that.
+
+
+
+== Neo4j Testcontainer
+=== Using with OGM
+=== Different modes
+=== Embedded
+=== Using with OGM and SDN, DataNeo4jTest
+=== Summary
+
+
+https://unsplash.com/photos/N_3CHNdliVs
