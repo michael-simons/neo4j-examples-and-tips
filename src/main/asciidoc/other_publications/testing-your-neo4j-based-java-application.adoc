@@ -21,7 +21,7 @@ There are several aspects that needs to be considered while making the decision 
 * Are you using an Object-Graph-Mapping library like https://github.com/neo4j/neo4j-ogm[Neo4j-OGM] to build an application-side domain model?
 * Did you add https://github.com/spring-projects/spring-data-neo4j[Spring Data Neo4j] to the mix to take advantage of the Spring ecosystem?
 
-I'll cover those four scenarios which allow for a good comparision of the options we have at hand for testing queries or a domain model against the Neo4j database.
+I'll cover those four scenarios which allow for a good comparison of the options we have at hand for testing queries or a domain model against the Neo4j database.
 
 I'm gonna use https://junit.org/junit5/[JUnit 5] in all scenarios.
 At the beginning of 2019, there's hardly any reason not to use JUnit 5 in new projects.
@@ -83,7 +83,6 @@ include::{examples}/using-the-test-harness/src/test/java/org/neo4j/tips/testing/
 <4> custom procedures and functions as well as
 <5> fixtures, either through Cypher statements like here, files or even functions.
 <6> finally, start the server
-<7> and after all test, stop it
 
 Now it's really easy to use the server provided by the harness.
 I have added the Java-Driver as test-dependency to the project and open up a connection as against a standalone server-instance or cluster:
@@ -109,18 +108,6 @@ The other disadvantage is the fact, that you're running the database inside the 
 Most of the time this is not what production looks like.
 While being on the same JVM is the correct place for stored procedures, it is not for applications.
 Using an embedded database for testing your application code might lead you into a false sense of safety.
-
-=== Summary
-
-When writing custom extensions, you want a quick feedback loop for all of your tests.
-You're also very close to the server in all cases.
-The test-harness provides you with the fastest feedback loop possible and doesn't expose your code to more than you actually need.
-Your code is right there at the server level.
-The test-harness and the embedded, customizable instance of Neo4j should be your first choice when testing custom Neo4j extensions.
-It is also a good choice for infrastructure code like Neo4j-OGM and Spring Data Neo4j itself.
-Neo4j-OGM runs against an embedded graph, over Bolt and HTTP, so it must be tested against all of those.
-The test-harness provides good support for that.
-
 
 == Neo4j Testcontainer
 
@@ -288,6 +275,15 @@ And with that, we just have tested an Spring Data Neo4j based Neo4j-application 
 Starting with the plugins and ending up with an integration test.
 
 === Summary
+
+When writing custom extensions, you want a quick feedback loop for all of your tests.
+You're also very close to the server in all cases.
+The test-harness provides you with the fastest feedback loop possible and doesn't expose your code to more than you actually need.
+Your code is right there at the server level.
+The test-harness and the embedded, customizable instance of Neo4j should be your first choice when testing custom Neo4j extensions.
+It is also a good choice for infrastructure code like Neo4j-OGM and Spring Data Neo4j itself.
+Neo4j-OGM runs against an embedded graph, over Bolt and HTTP, so it must be tested against all of those.
+The test-harness provides good support for that.
 
 The main advantage of using a Testcontainer is the fact that reassambles your later application setup the most.
 While there are some use cases, most applications should not run an embedded version of Neo4j.
