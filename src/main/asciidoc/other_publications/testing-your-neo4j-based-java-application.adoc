@@ -292,7 +292,7 @@ You cannot run Neo4j in https://neo4j.com/docs/operations-manual/current/cluster
 Furthermore: If your application goes down, so would your database.
 
 The generic Testcontainer or the dedicated Neo4j-Testcontainer gives an easy way to bring up new, clean database instances for each test.
-Thus, your tests are independent of each other and you won't have interference in your testdata from concurrent tets.
+Thus, your tests are independent of each other and you won't have interference in your test data from concurrent tests.
 
 So please keep the following in mind while your design your integration tests:
 
