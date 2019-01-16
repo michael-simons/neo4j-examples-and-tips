@@ -32,6 +32,8 @@ The spatial datatype `point` is new since Neo4j 3.4 and Neo4j-OGM will support i
 
 == Neo4j test-harness
 
+NOTE: The full example howto use the test-harness for custom Neo4j extension is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-the-test-harness[using-the-test-harness].
+
 === Testing custom Neo4j extensions
 
 Neo4j can be extended with https://neo4j.com/docs/java-reference/3.5/extending-neo4j/procedures/[custom procedures] and functions.
@@ -122,6 +124,8 @@ The test-harness provides good support for that.
 
 == Neo4j Testcontainer
 
+NOTE: The full example howto use the Testcontainers Spring Data Neo4j based applications is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-testcontainers[using-testcontainers].
+
 What are https://www.testcontainers.org[Testcontainers]?
 
 [quote, Testcontainers.org]
@@ -135,11 +139,154 @@ František already covered a lot here and you should check this out.
 In the meantime, our pull request has landed in Testcontainers.
 https://www.testcontainers.org/usage/neo4j_container.html[Neo4j container] describes the basic usage of the official container.
 
+=== General setup of Testcontainers with JUnit 5
 
-=== Using with OGM
-=== Different modes
-=== Embedded
+As stated earlier, I have become a big fan of JUnit 5.
+Nice assertions are one reason, package private test methods, better lifecycle management and extensions are another.
+
+Testcontainers comes with support for JUnit 5.
+<<testcontainers-neo4j-junit5-deps>> shows all the necessary dependencies:
+
+[source,xml]
+[[testcontainers-neo4j-junit5-deps]]
+.pom.xml, Dependencies for JUnit, Testcontainers and the Neo4j Testcontainer
+----
+include::{examples}/using-testcontainers/pom.xml[tags=testcontainers-neo4j-junit5-deps,indent=0]
+----
+
+At the time of writing, `testcontainers.version` is `1.10.5` and `junit-jupiter.version` is `5.3.2`.
+
+I recommend the following setup for an integration test with a Testcontainer:
+
+[source,java]
+[[minimal-neo4j-testcontainer-setup]]
+.PlainOGMTest.java, Mininal test setup
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/PlainOGMTest.java[tags=minimal-neo4j-testcontainer-setup,indent=0]
+----
+<1> When run, extend this test-class with the `@Testcontainers` extension
+<2> The extension will look for all attributes marked `@Container` and start and stop them according to their lifecycle
+<3> Create (but don't start) a `Neo4jContainer`
+
+Defining the Testcontainer as a `static` attribute defines a shared container.
+This container is started before all tests and closed afterwards.
+If the container is defined as an instance attribute, it's restarted before each individual test.
+
+While it is possible to change the lifecycle of the test class to `PER_CLASS` instead of `PER_METHOD`, it's a bit harder later on to configure it for Spring Boot Test-Slices.
+
+Also applicable for both plain OGM and SDN test is the way to provide a text-fixture.
+This can be done in a `@BeforeAll` method like this:
+
+[source,java]
+[[prepare-test-data]]
+.PlainOGMTest.java, Prepare test data
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/PlainOGMTest.java[tags=prepare-test-data,indent=0]
+----
+<1> `neo4j` is the container we defined and started above. It provides access to the databases password
+<2> The container provides an accessor to the Bolt url which contains a random port
+
+The `@BeforeAll` method is invoked once before all tests.
+I provide the test data over Bolt, so I have the Neo4j Java-Driver on the classpath.
+Having a static string here is one option, but you can read in your test-data anyway you want.
+
+=== Using with Neo4j-OGM
+
+The only thing you need to test Neo4j-OGM queries now is a Neo4j-OGM `SessionFactory`.
+I recommend defining it as a static variable through a second `@BeforeAll` method in the test as well:
+
+[source,java]
+[[prepare-sessionfactory]]
+.PlainOGMTest.java, Create the `SessionFactory`
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/PlainOGMTest.java[tags=prepare-sessionfactory,indent=0]
+----
+
+Again: No hardcoded password, no hardcoded Bolt-URL.
+The Neo4j-Testcontainers provides this.
+
+One possible test with the above data could be this:
+
+[source,java]
+[[example-test]]
+.PlainOGMTest.java, A simple test
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/PlainOGMTest.java[tags=example-test,indent=0]
+----
+
+This test runs over the network against a "real", server-mode Neo4j-instance.
+Just as your application hopefully will.
+
 === Using with OGM and SDN, DataNeo4jTest
+
+For me there's no good reasons to start new Spring projects without Spring Boot.
+Spring Boot brings you - among other nice things - https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-testing.html[autoconfigured tests] and more important, test slices.
+Test slices deal specifically with certain, technical layers of your application.
+Being either database layer, service layer or just the web-frontend.
+
+Regarding the database layer it's an integration test very much focussed on interaction with the database.
+
+The Neo4j test-slice is called `@DataNeo4jTest`
+
+[source,java]
+[[sdn-neo4j-testcontainer-setup]]
+.SDNTest.java
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/SDNTest.java[tags=sdn-neo4j-testcontainer-setup,indent=0]
+----
+<1> This activates only Spring Datas repository layer and also provides Spring Boots JUnit 5 extensions
+<2> A `@TestConfiguration` adds to Spring Boots config but doesn't prevent autoconfiguration
+<3> A bean of Neo4j-OGMs configuration will be created to configure the `SessionFactory` of Spring Data Neo4j
+<4> JUnit 5 together with Spring Boots extension allow constructor based injection, even in tests
+
+Now you can test against the `ThingRepository` which is shown in <<thing-repository>>
+
+[source,java]
+[[thing-repository]]
+.ThingRepository.java, a Spring Data Neo4j repository
+----
+include::{examples}/using-testcontainers/src/main/java/org/neo4j/tips/testing/using_testcontainers/domain/ThingRepository.java[tags=thing-repository,indent=0]
+----
+
+A "boring" test would look like this:
+
+[source,java]
+[[boring-sdn-test]]
+.SDNTest.java
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/SDNTest.java[tags=boring-sdn-test,indent=0]
+----
+
+Why is this boring?
+Because we're basically testing whether Spring Datas query derivation works or not.
+
+Testing `findThingWithGeometry` is much more interesting, as you may recognize `examples.getGeometry(t)` as our own, custom procedure.
+How do we get this into the test container?
+Turns out the authors of Testcontainers thought of a method to mount stuff in the container before it starts.
+
+I packaged the custom stored procedures from the beginning of this article into a JAR files name `geometry-toolbox.jar` and added it to the test resources.
+With this the Testcontainer can be created like this:
+
+[source,java]
+[[copy-plugin]]
+.SDNTest.java
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/SDNTest.java[tags=copy-plugin,indent=0]
+----
+
+The plugin-jar get's copied into the right place inside the container and is recognized by Neo4j during startup.
+Given the same test data as in <<prepare-test-data>>, a not so boring test now is green:
+
+[source,java]
+[[not-boring-sdn-test]]
+.SDNTest.java
+----
+include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/SDNTest.java[tags=not-boring-sdn-test,indent=0]
+----
+
+And with that, we just have tested an Spring Data Neo4j based Neo4j-application including custom plugins end-to-end.
+Starting with the plugins and ending up with an integration test.
+
 === Summary
 
 The main advantage of using a Testcontainer is the fact that reassambles your later application setup the most.
@@ -159,8 +306,3 @@ So please keep the following in mind while your design your integration tests:
 Testcontainers help a lot to achieve the first item.
 Whether you can get your hands on a dataset that is similar to your production data set, depends probably on your surroundings and organization.
 If it is possible however, you could create a custom Neo4j Docker image and use that one as a basis for the Testcontainer in your CI.
-
-
-
-
-https://unsplash.com/photos/N_3CHNdliVs

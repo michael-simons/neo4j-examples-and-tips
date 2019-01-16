@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.ogm.config.Configuration;
-import org.neo4j.ogm.session.SessionFactory;
 import org.neo4j.tips.testing.using_testcontainers.domain.ThingRepository;
+import org.neo4j.tips.testing.using_testcontainers.domain.ThingWithGeometry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.neo4j.DataNeo4jTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -32,18 +32,25 @@ import org.springframework.context.annotation.Bean;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.MountableFile;
 
 /**
  * @author Michael J. Simons
  */
+// tag::sdn-neo4j-testcontainer-setup[]
 @Testcontainers
-@DataNeo4jTest
+@DataNeo4jTest // <1>
 public class SDNTest {
 
-	@Container
-	private static final Neo4jContainer neo4j = new Neo4jContainer();
+	// end::sdn-neo4j-testcontainer-setup[]
 
-	private static SessionFactory sessionFactory;
+	// tag::copy-plugin[]
+	@Container
+	private static final Neo4jContainer neo4j = new Neo4jContainer<>()
+		.withCopyFileToContainer(
+			MountableFile.forClasspathResource("/geometry-toolbox.jar"),
+			"/var/lib/neo4j/plugins/");
+	// end::copy-plugin[]
 
 	@BeforeAll
 	static void prepareTestdata() {
@@ -52,24 +59,18 @@ public class SDNTest {
 		try (var driver = GraphDatabase.driver(neo4j.getBoltUrl(), AuthTokens.basic("neo4j", password));
 			var session = driver.session()
 		) {
-			session.writeTransaction(work ->
-				work.run(""
-					+ "MERGE (:Thing {name: 'Thing',   createdAt: localdatetime('2019-01-01T20:00:00')})"
-					+ "MERGE (:Thing {name: 'Thing 2', createdAt: localdatetime('2019-01-02T20:00:00')})"
-					+ "MERGE (:Thing {name: 'Thing 3', createdAt: localdatetime('2019-01-03T20:00:00')})"
-				));
-		} catch (Exception e) {
-			fail(e.getMessage());
+			session.writeTransaction(work -> work.run(PlainOGMTest.TEST_DATA));
 		}
 	}
 
-	@TestConfiguration
+	// tag::sdn-neo4j-testcontainer-setup[]
+	@TestConfiguration // <2>
 	static class Config {
 
-		@Bean
+		@Bean // <3>
 		public org.neo4j.ogm.config.Configuration configuration() {
 			return new Configuration.Builder()
-				.uri(neo4j.getBoltUrl()) // <1>
+				.uri(neo4j.getBoltUrl())
 				.credentials("neo4j", neo4j.getAdminPassword())
 				.build();
 		}
@@ -77,15 +78,39 @@ public class SDNTest {
 
 	private final ThingRepository thingRepository;
 
-	@Autowired
+	@Autowired // <4>
 	public SDNTest(ThingRepository thingRepository) {
 		this.thingRepository = thingRepository;
 	}
+	// end::sdn-neo4j-testcontainer-setup[]
 
+	// tag::boring-sdn-test[]
 	@Test
 	void someQueryShouldWork() {
 
 		var things = thingRepository.findThingByNameMatchesRegex("Thing \\d");
 		assertThat(things).hasSize(2);
 	}
+	// end::boring-sdn-test[]
+
+	// tag::not-boring-sdn-test[]
+	@Test
+	void customProjectionShouldWork() {
+
+		var expectedWkt
+			= "LINESTRING (0.000000 0.000000,"
+			+ "10.000000 0.000000,"
+			+ "10.000000 10.000000,"
+			+ "0.000000 10.000000,"
+			+ "0.000000 0.000000)";
+
+		var thingWithGeometry = thingRepository.findThingWithGeometry("A box");
+		assertThat(thingWithGeometry).isNotNull()
+			.extracting(ThingWithGeometry::getWkt)
+			.isEqualTo(expectedWkt);
+	}
+	// end::not-boring-sdn-test[]
+
+	// tag::sdn-neo4j-testcontainer-setup[]
 }
+// end::sdn-neo4j-testcontainer-setup[]

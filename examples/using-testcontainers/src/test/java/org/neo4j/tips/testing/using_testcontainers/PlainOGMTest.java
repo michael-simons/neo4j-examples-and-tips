@@ -22,6 +22,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.ogm.config.Configuration;
@@ -33,51 +35,70 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 /**
  * @author Michael J. Simons
  */
-@Testcontainers
+// tag::minimal-neo4j-testcontainer-setup[]
+@Testcontainers // <1>
 public class PlainOGMTest {
 
-	@Container
-	private static final Neo4jContainer neo4j = new Neo4jContainer();
+	@Container // <2>
+	private static final Neo4jContainer neo4j = new Neo4jContainer(); // <3>
+	// end::minimal-neo4j-testcontainer-setup[]
 
-	private static SessionFactory sessionFactory;
+	// tag::prepare-test-data[]
+
+	static final String TEST_DATA = ""
+		+ " MERGE (:Thing {name: 'Thing'  })"
+		+ " MERGE (:Thing {name: 'Thing 2'})"
+		+ " MERGE (:Thing {name: 'Thing 3'})"
+		+ " CREATE (:Thing {name: 'A box', geometry: ["
+		+ "   point({x:  0, y:  0}), "
+		+ "   point({x: 10, y:  0}), "
+		+ "   point({x: 10, y: 10}), "
+		+ "   point({x:  0, y: 10}), "
+		+ "   point({x:  0, y:  0})] }"
+		+ ")";
 
 	@BeforeAll
 	static void prepareTestdata() {
-		String password = neo4j.getAdminPassword();
+		String password = neo4j.getAdminPassword(); // <1>
 
-		try (var driver = GraphDatabase.driver(neo4j.getBoltUrl(), AuthTokens.basic("neo4j", password));
+		AuthToken authToken = AuthTokens.basic("neo4j", password);
+		try (var driver = GraphDatabase.driver(neo4j.getBoltUrl(), authToken); // <2>
 			var session = driver.session()
 		) {
-			session.writeTransaction(work ->
-				work.run(""
-					+ "MERGE (:Thing {name: 'Thing'})"
-					+ "MERGE (:Thing {name: 'Thing 2'})"
-					+ "MERGE (:Thing {name: 'Thing 3'})"
-				));
-		} catch (Exception e) {
-			fail(e.getMessage());
+			session.writeTransaction(work -> work.run(TEST_DATA));
 		}
 	}
+	// end::prepare-test-data[]
+
+	// tag::prepare-sessionfactory[]
+	private static SessionFactory sessionFactory;
 
 	@BeforeAll
 	static void prepareSessionFactory() {
 
 		var ogmConfiguration = new Configuration.Builder()
-			.uri(neo4j.getBoltUrl()) // <1>
+			.uri(neo4j.getBoltUrl())
 			.credentials("neo4j", neo4j.getAdminPassword())
 			.build();
 
-		sessionFactory = new SessionFactory(ogmConfiguration, "org.neo4j.tips.testing.using_testcontainers.domain");
+		sessionFactory = new SessionFactory(
+			ogmConfiguration,
+			"org.neo4j.tips.testing.using_testcontainers.domain");
 	}
+	// end::prepare-sessionfactory[]
 
+	// tag::example-test[]
 	@Test
 	void someQueryShouldWork() {
 
+		var query = "MATCH (t:Thing) WHERE t.name =~ $name RETURN t";
 		var result = sessionFactory.openSession()
-			.query("MATCH (t:Thing) WHERE t.name =~ $name RETURN t", Map.of("name", "Thing \\d"));
+			.query(query, Map.of("name", "Thing \\d"));
 
 		assertThat(result).hasSize(2);
 	}
+	// end::example-test[]
 
+	// tag::minimal-neo4j-testcontainer-setup[]
 }
-
+// end::minimal-neo4j-testcontainer-setup[]

@@ -38,6 +38,7 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- tag::testcontainers-neo4j-junit5-deps[] -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
@@ -58,6 +59,8 @@
 			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- end::testcontainers-neo4j-junit5-deps[] -->
+
 	</dependencies>
 
 	<build>

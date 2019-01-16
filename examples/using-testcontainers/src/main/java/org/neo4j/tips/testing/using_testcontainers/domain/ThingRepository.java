@@ -18,12 +18,20 @@ package org.neo4j.tips.testing.using_testcontainers.domain;
 
 import java.util.List;
 
+import org.springframework.data.neo4j.annotation.Query;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 
 /**
  * @author Michael J. Simons
  */
+// tag::thing-repository[]
 public interface ThingRepository extends Neo4jRepository<Thing, Long> {
 
 	List<Thing> findThingByNameMatchesRegex(String regexForName);
+
+	@Query(value
+		= " MATCH (t:Thing) WHERE t.name = $name"
+		+ " RETURN t.name AS name, examples.getGeometry(t) AS wkt")
+	ThingWithGeometry findThingWithGeometry(String name);
 }
+// end::thing-repository[]
