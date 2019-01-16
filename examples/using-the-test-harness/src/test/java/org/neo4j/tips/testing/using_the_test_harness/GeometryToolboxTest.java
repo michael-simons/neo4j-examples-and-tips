@@ -26,9 +26,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilders;
 
@@ -68,8 +74,8 @@ class GeometryToolboxTest {
 			)
 			// end::test-harness-setup[]
 			.withFixture(graphDatabaseService -> {
-				try (var transaction = graphDatabaseService.beginTx()) {
-					var node = graphDatabaseService.createNode(label("Thing"));
+				try (Transaction transaction = graphDatabaseService.beginTx()) {
+					Node node = graphDatabaseService.createNode(label("Thing"));
 					node.setProperty("name", "An empty thing");
 					transaction.success();
 				}
@@ -83,10 +89,10 @@ class GeometryToolboxTest {
 	// tag::test-harness-usage1[]
 	@Test
 	void shouldConvertLocations() {
-		try (var driver = GraphDatabase.driver(databaseServer.boltURI(), driverConfig);
-			var session = driver.session()) {
+		try (Driver driver = GraphDatabase.driver(databaseServer.boltURI(), driverConfig);
+			Session session = driver.session()) {
 
-			var result = session.run(""
+			StatementResult result = session.run(""
 				+ " MATCH (n:Place) WITH collect(n) AS nodes"
 				+ " CALL examples.convertLegacyLocation(nodes) YIELD node"
 				+ " RETURN node ORDER BY node.name");
@@ -107,20 +113,20 @@ class GeometryToolboxTest {
 
 	@Test
 	void shouldGenerateWkt() {
-		try (var driver = GraphDatabase.driver(databaseServer.boltURI(), driverConfig);
-			var session = driver.session()) {
+		try (Driver driver = GraphDatabase.driver(databaseServer.boltURI(), driverConfig);
+			Session session = driver.session()) {
 
-			var result = session.run(""
+			StatementResult result = session.run(""
 				+ " MATCH (n:Thing)"
 				+ " RETURN examples.getGeometry(n) as geometry ORDER BY n.name");
 
-			var expectedWkt = "LINESTRING ("
+			String expectedWkt = "LINESTRING ("
 				+ "0.000000 0.000000,10.000000 0.000000,10.000000 10.000000,0.000000 10.000000,0.000000 0.000000"
 				+ ")";
 			assertThat(result.stream())
 				.hasSize(2)
 				.extracting(r -> {
-					var geometry = r.get("geometry");
+					Value geometry = r.get("geometry");
 					return geometry.isNull() ? null : geometry.asString();
 				})
 				.containsExactly(expectedWkt, null);

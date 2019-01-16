@@ -17,6 +17,7 @@
 package org.neo4j.tips.testing.using_the_test_harness;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -26,6 +27,7 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
 /**
@@ -59,8 +61,8 @@ public class LocationConversion {
 
 	static Node convertPropertiesToLocation(Node node) {
 
-		var latLong = node.getProperties(PROPERTY_LATITUDE, PROPERTY_LONGITUDE);
-		var location = Values.pointValue(
+		Map<String, Object> latLong = node.getProperties(PROPERTY_LATITUDE, PROPERTY_LONGITUDE);
+		PointValue location = Values.pointValue(
 			CoordinateReferenceSystem.WGS84,
 			(double) latLong.get(PROPERTY_LONGITUDE),
 			(double) latLong.get(PROPERTY_LATITUDE)
