@@ -120,13 +120,47 @@ Neo4j-OGM runs against an embedded graph, over Bolt and HTTP, so it must be test
 The test-harness provides good support for that.
 
 
-
 == Neo4j Testcontainer
+
+What are https://www.testcontainers.org[Testcontainers]?
+
+[quote, Testcontainers.org]
+____
+Testcontainers is a Java library that supports JUnit tests, providing lightweight, throwaway instances of common databases, Selenium web browsers, or anything else that can run in a Docker container.
+____
+
+http://twitter.com/frant_hartm[František Hartman] from  GraphAware wrote a very details article about https://graphaware.com/docker,/testing/2018/12/16/integration-testing-with-docker-neo4j-image-and-testcontainers.html[Integration testing with Docker Neo4j image and Testcontainers].
+František already covered a lot here and you should check this out.
+
+In the meantime, our pull request has landed in Testcontainers.
+https://www.testcontainers.org/usage/neo4j_container.html[Neo4j container] describes the basic usage of the official container.
+
+
 === Using with OGM
 === Different modes
 === Embedded
 === Using with OGM and SDN, DataNeo4jTest
 === Summary
+
+The main advantage of using a Testcontainer is the fact that reassambles your later application setup the most.
+While there are some use cases, most applications should not run an embedded version of Neo4j.
+Think about it: In a microservices world, where you usually more than one instance of an application running, should each instance bring it's own database?
+You cannot run Neo4j in https://neo4j.com/docs/operations-manual/current/clustering/[Causal Cluster mode] in an embedded scenario, so you have to synchronize those instances.
+Furthermore: If your application goes down, so would your database.
+
+The generic Testcontainer or the dedicated Neo4j-Testcontainer gives an easy way to bring up new, clean database instances for each test.
+Thus, your tests are independent of each other and you won't have interference in your testdata from concurrent tets.
+
+So please keep the following in mind while your design your integration tests:
+
+* The topology of your test should reassemble your target topology as much as possible
+* Try to use a dataset that is comparable in size to your production dataset
+
+Testcontainers help a lot to achieve the first item.
+Whether you can get your hands on a dataset that is similar to your production data set, depends probably on your surroundings and organization.
+If it is possible however, you could create a custom Neo4j Docker image and use that one as a basis for the Testcontainer in your CI.
+
+
 
 
 https://unsplash.com/photos/N_3CHNdliVs
