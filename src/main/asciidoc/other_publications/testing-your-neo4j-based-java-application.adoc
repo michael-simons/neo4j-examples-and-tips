@@ -32,7 +32,7 @@ The spatial datatype `point` is new since Neo4j 3.4 and Neo4j-OGM will support i
 
 == Neo4j test-harness
 
-NOTE: The full example how to use the test-harness for custom Neo4j extension is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-the-test-harness[using-the-test-harness].
+NOTE: The full example how to use the test-harness for custom Neo4j extension is on GitHub: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-the-test-harness[using-the-test-harness].
 
 === Testing custom Neo4j extensions
 
@@ -111,7 +111,7 @@ Using an embedded database for testing your application code might lead you into
 
 == Neo4j Testcontainer
 
-NOTE: The full example how to use the Testcontainers Spring Data Neo4j based applications is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-testcontainers[using-testcontainers].
+NOTE: The full example how to use the Testcontainers Spring Data Neo4j based applications is on GitHub: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-testcontainers[using-testcontainers].
 
 What are https://www.testcontainers.org[Testcontainers]?
 
