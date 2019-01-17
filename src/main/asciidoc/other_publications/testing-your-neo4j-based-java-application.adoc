@@ -17,7 +17,7 @@ I'm an engineer on Neo4j's Spring Data team, so this is where my focus usually i
 There are several aspects that needs to be considered while making the decision for or against a certain test setup.
 
 * Are you developing a stored procedure for the database itself?
-* Are you using the official https://github.com/neo4j/neo4j-java-driver[Java driver] to issue Cypher-queries directly over Bolt?
+* Are you using the official https://github.com/neo4j/neo4j-java-driver[Java-driver] to issue Cypher-queries directly over Bolt?
 * Are you using an Object-Graph-Mapping library like https://github.com/neo4j/neo4j-ogm[Neo4j-OGM] to build an application-side domain model?
 * Did you add https://github.com/spring-projects/spring-data-neo4j[Spring Data Neo4j] to the mix to take advantage of the Spring ecosystem?
 
@@ -25,14 +25,14 @@ I'll cover those four scenarios which allow for a good comparison of the options
 
 I'm gonna use https://junit.org/junit5/[JUnit 5] in all scenarios.
 At the beginning of 2019, there's hardly any reason not to use JUnit 5 in new projects.
-All Neo4j specific techniques demonstrated in this post can be be applied some adaption to JUnit 4 as well.
+All Neo4j specific techniques demonstrated in this post can be be applied with some adaption to JUnit 4 as well.
 
 NOTE: The examples in this article will all deal with spatial values and the functions defined there on.
 The spatial datatype `point` is new since Neo4j 3.4 and Neo4j-OGM will support it out-of-the-box in Neo4j-OGM 3.2 and SDN 5.2.
 
 == Neo4j test-harness
 
-NOTE: The full example howto use the test-harness for custom Neo4j extension is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-the-test-harness[using-the-test-harness].
+NOTE: The full example how to use the test-harness for custom Neo4j extension is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-the-test-harness[using-the-test-harness].
 
 === Testing custom Neo4j extensions
 
@@ -52,11 +52,11 @@ Given the following user defined procedure, which is part of this link:{examples
 include::{examples}/using-the-test-harness/src/main/java/org/neo4j/tips/testing/using_the_test_harness/LocationConversion.java[tags=location-conversion]
 ----
 
-The `LocationConversion` operates directly on the graphdatabase nodes for optimal performance.
+The `LocationConversion` operates directly on the graph database nodes for optimal performance.
 It is meant to be run server side with a call like this: `CALL examples.convertLegacyLocation(nodes)`.
 If you followed the instructions on how to package your stored procedures you would have ended up with a JAR file containing the executable code.
 Do you want to repackage it, stop your server and upload it everytime for testing it?
-Propably not.
+Probably not.
 
 Enter the the test-harness:
 
@@ -77,9 +77,9 @@ With JUnit 5 you don't need a `@Rule` to start it as JUnit 5 supports non-static
 ----
 include::{examples}/using-the-test-harness/src/test/java/org/neo4j/tips/testing/using_the_test_harness/GeometryToolboxTest.java[tags=test-harness-setup]
 ----
-<1> The lifecycle of this test should be per class, so that `#initializeNeo4j`, annotated with `@BeforeAll` runs exactly once.
-<2> Two variables to hold a reference to the server during all tests.
-<3> `initializeNeo4j` runs before all tests and uses a builder to create a test server, the builder provides interfaces for registering
+<1> The lifecycle of this test should be `PER_CLASS, so that `initializeNeo4j()`, annotated with `@BeforeAll` runs exactly once.
+<2> The variable `embeddedDatabaseServer` to hold a reference to the server during all tests.
+<3> `initializeNeo4j()` runs before all tests and uses a builder to create a test server, the builder provides interfaces for registering
 <4> custom procedures and functions as well as
 <5> fixtures, either through Cypher statements like here, files or even functions.
 <6> finally, start the server
@@ -97,7 +97,7 @@ include::{examples}/using-the-test-harness/src/test/java/org/neo4j/tips/testing/
 === Using the test-harness for application level tests
 
 Technically, the test-harness and the embedded server, reachable through `ServerControls`, can be used for application-level-testing.
-It exposes next through the Bolt-URI the HTTP-URI as well as the embedded graph itself.
+Besides the Bolt-URI it exposes the HTTP-URI as well as the embedded graph database instance itself.
 Both URIs use random, free ports and thus allow tests in parallel.
 The `ServerControls` are an autoclosable resource and as they start relatively quick, they can be fired up multiple times.
 
@@ -111,7 +111,7 @@ Using an embedded database for testing your application code might lead you into
 
 == Neo4j Testcontainer
 
-NOTE: The full example howto use the Testcontainers Spring Data Neo4j based applications is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-testcontainers[using-testcontainers].
+NOTE: The full example how to use the Testcontainers Spring Data Neo4j based applications is on Github: https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/using-testcontainers[using-testcontainers].
 
 What are https://www.testcontainers.org[Testcontainers]?
 
@@ -143,7 +143,7 @@ include::{examples}/using-testcontainers/pom.xml[tags=testcontainers-neo4j-junit
 
 At the time of writing, `testcontainers.version` is `1.10.5` and `junit-jupiter.version` is `5.3.2`.
 
-I recommend the following setup for an integration test with a Testcontainer:
+I recommend the following setup for an integration test with Testcontainers:
 
 [source,java]
 [[minimal-neo4j-testcontainer-setup]]
@@ -152,16 +152,17 @@ I recommend the following setup for an integration test with a Testcontainer:
 include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/PlainOGMTest.java[tags=minimal-neo4j-testcontainer-setup,indent=0]
 ----
 <1> When run, extend this test-class with the `@Testcontainers` extension
-<2> The extension will look for all attributes marked `@Container` and start and stop them according to their lifecycle
+<2> The extension will look for all attributes marked as `@Container` and start and stop them according to their lifecycle. Here, `databaseServer` points to our Neo4j Testcontainer.
 <3> Create (but don't start) a `Neo4jContainer`
 
-Defining the Testcontainer as a `static` attribute defines a shared container.
-This container is started before all tests and closed afterwards.
+As JUnit 5 tests have a default lifecycle of `PER_METHOD`, shared state needs to be defined as static attributes of the test.
+Hence, the definition of the Testcontainer as a `static` attribute.
+This way, the  container is started before all tests and closed afterwards.
 If the container is defined as an instance attribute, it's restarted before each individual test.
 
 While it is possible to change the lifecycle of the test class to `PER_CLASS` instead of `PER_METHOD`, it's a bit harder later on to configure it for Spring Boot Test-Slices.
 
-Also applicable for both plain OGM and SDN test is the way to provide a text-fixture.
+Also applicable for both plain Neo4j-OGM and SDN test is the way to provide a test-fixture.
 This can be done in a `@BeforeAll` method like this:
 
 [source,java]
@@ -170,8 +171,8 @@ This can be done in a `@BeforeAll` method like this:
 ----
 include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/PlainOGMTest.java[tags=prepare-test-data,indent=0]
 ----
-<1> `neo4j` is the container we defined and started above. It provides access to the databases password
-<2> The container provides an accessor to the Bolt url which contains a random port
+<1> `databaseServer` is the container we defined and started above. It provides access to the databases password
+<2> The container provides an accessor to the Bolt-URI which contains a random port
 
 The `@BeforeAll` method is invoked once before all tests.
 I provide the test data over Bolt, so I have the Neo4j Java-Driver on the classpath.
@@ -179,7 +180,7 @@ Having a static string here is one option, but you can read in your test-data an
 
 === Using with Neo4j-OGM
 
-The only thing you need to test Neo4j-OGM queries now is a Neo4j-OGM `SessionFactory`.
+The only thing you need to test your business logic based on Neo4j-OGM and queries is a Neo4j-OGM `SessionFactory`.
 I recommend defining it as a static variable through a second `@BeforeAll` method in the test as well:
 
 [source,java]
@@ -189,8 +190,8 @@ I recommend defining it as a static variable through a second `@BeforeAll` metho
 include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/PlainOGMTest.java[tags=prepare-sessionfactory,indent=0]
 ----
 
-Again: No hardcoded password, no hardcoded Bolt-URL.
-The Neo4j-Testcontainers provides this.
+Again: No hardcoded password, no hardcoded Bolt-URI.
+The Neo4j-Testcontainer provides this.
 
 One possible test with the above data could be this:
 
@@ -204,7 +205,7 @@ include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/us
 This test runs over the network against a "real", server-mode Neo4j-instance.
 Just as your application hopefully will.
 
-=== Using with OGM and SDN, DataNeo4jTest
+=== Using with Neo4j-OGM and SDN, DataNeo4jTest
 
 For me there's no good reasons to start new Spring projects without Spring Boot.
 Spring Boot brings you - among other nice things - https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-testing.html[autoconfigured tests] and more important, test slices.
@@ -221,7 +222,7 @@ The Neo4j test-slice is called `@DataNeo4jTest`
 ----
 include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/SDNTest.java[tags=sdn-neo4j-testcontainer-setup,indent=0]
 ----
-<1> This activates only Spring Datas repository layer and also provides Spring Boots JUnit 5 extensions
+<1> This activates Spring Datas repository layer and also provides Spring Boot's JUnit 5 extensions
 <2> A `@TestConfiguration` adds to Spring Boots config but doesn't prevent autoconfiguration
 <3> A bean of Neo4j-OGMs configuration will be created to configure the `SessionFactory` of Spring Data Neo4j
 <4> JUnit 5 together with Spring Boots extension allow constructor based injection, even in tests
@@ -262,7 +263,12 @@ include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/us
 ----
 
 The plugin-jar get's copied into the right place inside the container and is recognized by Neo4j during startup.
-Given the same test data as in <<prepare-test-data>>, a not so boring test now is green:
+The test data for the second test isn't hardcoded like in `PlainOGMTest.java`.
+I copied over the `graph.db` folder from my "production" instance to the test resources.
+Calling `withClasspathResourceMapping()` maps it into the containers `/data/` volumne, where Neo4j expects the database.
+In a real-world test you probably have that data folder somewhere else and not in your project.
+In such cases, you would use `withFileSystemBind()` of the Testcontainer.
+Anyway, given the same test data as in <<prepare-test-data>>, a not so boring test now is green:
 
 [source,java]
 [[not-boring-sdn-test]]

@@ -19,8 +19,6 @@ package org.neo4j.tips.testing.using_the_test_harness;
 import static org.assertj.core.api.Assertions.*;
 import static org.neo4j.graphdb.Label.*;
 
-import java.net.URI;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,7 +31,6 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.Values;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.ServerControls;
 import org.neo4j.harness.TestServerBuilders;
@@ -50,12 +47,12 @@ class GeometryToolboxTest {
 	private static final Config driverConfig = Config.build().withoutEncryption().toConfig();
 
 	// tag::test-harness-setup[]
-	private ServerControls databaseServer; // <2>
+	private ServerControls embeddedDatabaseServer; // <2>
 
 	@BeforeAll // <3>
 	void initializeNeo4j() {
 
-		this.databaseServer = TestServerBuilders.newInProcessBuilder()
+		this.embeddedDatabaseServer = TestServerBuilders.newInProcessBuilder()
 			.withProcedure(LocationConversion.class) // <4>
 			.withFunction(GetGeometry.class)
 			.withFixture("" // <5>
@@ -89,7 +86,7 @@ class GeometryToolboxTest {
 	// tag::test-harness-usage1[]
 	@Test
 	void shouldConvertLocations() {
-		try (Driver driver = GraphDatabase.driver(databaseServer.boltURI(), driverConfig);
+		try (Driver driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI(), driverConfig);
 			Session session = driver.session()) {
 
 			StatementResult result = session.run(""
@@ -113,7 +110,7 @@ class GeometryToolboxTest {
 
 	@Test
 	void shouldGenerateWkt() {
-		try (Driver driver = GraphDatabase.driver(databaseServer.boltURI(), driverConfig);
+		try (Driver driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI(), driverConfig);
 			Session session = driver.session()) {
 
 			StatementResult result = session.run(""
@@ -135,7 +132,7 @@ class GeometryToolboxTest {
 
 	@AfterAll
 	void shutdownNeo4j() { // <7>
-		this.databaseServer.close();
+		this.embeddedDatabaseServer.close();
 	}
 
 	// tag::test-harness-setup[]

@@ -18,10 +18,7 @@ package org.neo4j.tips.testing.using_testcontainers;
 
 import static org.assertj.core.api.Assertions.*;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.neo4j.driver.v1.AuthTokens;
-import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.ogm.config.Configuration;
 import org.neo4j.tips.testing.using_testcontainers.domain.ThingRepository;
 import org.neo4j.tips.testing.using_testcontainers.domain.ThingWithGeometry;
@@ -29,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.neo4j.DataNeo4jTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -46,22 +44,14 @@ public class SDNTest {
 
 	// tag::copy-plugin[]
 	@Container
-	private static final Neo4jContainer neo4j = new Neo4jContainer<>()
+	private static final Neo4jContainer databaseServer = new Neo4jContainer<>()
 		.withCopyFileToContainer(
 			MountableFile.forClasspathResource("/geometry-toolbox.jar"),
-			"/var/lib/neo4j/plugins/");
+			"/var/lib/neo4j/plugins/")
+		.withClasspathResourceMapping(
+			"/test-graph.db",
+			"/data/databases/graph.db", BindMode.READ_WRITE);
 	// end::copy-plugin[]
-
-	@BeforeAll
-	static void prepareTestdata() {
-		String password = neo4j.getAdminPassword();
-
-		try (var driver = GraphDatabase.driver(neo4j.getBoltUrl(), AuthTokens.basic("neo4j", password));
-			var session = driver.session()
-		) {
-			session.writeTransaction(work -> work.run(PlainOGMTest.TEST_DATA));
-		}
-	}
 
 	// tag::sdn-neo4j-testcontainer-setup[]
 	@TestConfiguration // <2>
@@ -70,8 +60,8 @@ public class SDNTest {
 		@Bean // <3>
 		public org.neo4j.ogm.config.Configuration configuration() {
 			return new Configuration.Builder()
-				.uri(neo4j.getBoltUrl())
-				.credentials("neo4j", neo4j.getAdminPassword())
+				.uri(databaseServer.getBoltUrl())
+				.credentials("neo4j", databaseServer.getAdminPassword())
 				.build();
 		}
 	}

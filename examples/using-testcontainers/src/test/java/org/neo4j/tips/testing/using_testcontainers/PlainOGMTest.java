@@ -22,7 +22,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -40,7 +39,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class PlainOGMTest {
 
 	@Container // <2>
-	private static final Neo4jContainer neo4j = new Neo4jContainer(); // <3>
+	private static final Neo4jContainer databaseServer = new Neo4jContainer(); // <3>
 	// end::minimal-neo4j-testcontainer-setup[]
 
 	// tag::prepare-test-data[]
@@ -59,10 +58,10 @@ public class PlainOGMTest {
 
 	@BeforeAll
 	static void prepareTestdata() {
-		String password = neo4j.getAdminPassword(); // <1>
+		String password = databaseServer.getAdminPassword(); // <1>
 
 		AuthToken authToken = AuthTokens.basic("neo4j", password);
-		try (var driver = GraphDatabase.driver(neo4j.getBoltUrl(), authToken); // <2>
+		try (var driver = GraphDatabase.driver(databaseServer.getBoltUrl(), authToken); // <2>
 			var session = driver.session()
 		) {
 			session.writeTransaction(work -> work.run(TEST_DATA));
@@ -77,8 +76,8 @@ public class PlainOGMTest {
 	static void prepareSessionFactory() {
 
 		var ogmConfiguration = new Configuration.Builder()
-			.uri(neo4j.getBoltUrl())
-			.credentials("neo4j", neo4j.getAdminPassword())
+			.uri(databaseServer.getBoltUrl())
+			.credentials("neo4j", databaseServer.getAdminPassword())
 			.build();
 
 		sessionFactory = new SessionFactory(

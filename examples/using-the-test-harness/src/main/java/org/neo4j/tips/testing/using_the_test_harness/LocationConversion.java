@@ -17,7 +17,6 @@
 package org.neo4j.tips.testing.using_the_test_harness;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -61,10 +60,10 @@ public class LocationConversion {
 
 	static Node convertPropertiesToLocation(Node node) {
 
-		double lat = (double)node.removeProperty(PROPERTY_LATITUDE);
-		double lon = (double)node.removeProperty(PROPERTY_LONGITUDE);
+		double lat = (double) node.removeProperty(PROPERTY_LATITUDE);
+		double lon = (double) node.removeProperty(PROPERTY_LONGITUDE);
 		PointValue location = Values.pointValue(
-			CoordinateReferenceSystem.WGS84,lon,lat);
+			CoordinateReferenceSystem.WGS84, lon, lat);
 
 		node.setProperty(PROPERTY_LOCATION, location);
 
