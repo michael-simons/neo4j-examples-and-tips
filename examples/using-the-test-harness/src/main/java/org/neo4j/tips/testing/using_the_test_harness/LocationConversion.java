@@ -61,15 +61,11 @@ public class LocationConversion {
 
 	static Node convertPropertiesToLocation(Node node) {
 
-		Map<String, Object> latLong = node.getProperties(PROPERTY_LATITUDE, PROPERTY_LONGITUDE);
+		double lat = (double)node.removeProperty(PROPERTY_LATITUDE);
+		double lon = (double)node.removeProperty(PROPERTY_LONGITUDE);
 		PointValue location = Values.pointValue(
-			CoordinateReferenceSystem.WGS84,
-			(double) latLong.get(PROPERTY_LONGITUDE),
-			(double) latLong.get(PROPERTY_LATITUDE)
-		);
+			CoordinateReferenceSystem.WGS84,lon,lat);
 
-		node.removeProperty(PROPERTY_LATITUDE);
-		node.removeProperty(PROPERTY_LONGITUDE);
 		node.setProperty(PROPERTY_LOCATION, location);
 
 		return node;
