@@ -262,12 +262,15 @@ With this the Testcontainer can be created like this:
 include::{examples}/using-testcontainers/src/test/java/org/neo4j/tips/testing/using_testcontainers/SDNTest.java[tags=copy-plugin,indent=0]
 ----
 
-The plugin-jar get's copied into the right place inside the container and is recognized by Neo4j during startup.
+The plugin-jar gets copied into the right place inside the container and is recognized by Neo4j during startup.
 The test data for the second test isn't hardcoded like in `PlainOGMTest.java`.
 I copied over the `graph.db` folder from my "production" instance to the test resources.
-Calling `withClasspathResourceMapping()` maps it into the containers `/data/` volumne, where Neo4j expects the database.
+Calling `withClasspathResourceMapping()` maps it into the containers `/data/` volume, where Neo4j expects the database.
 In a real-world test you probably have that data folder somewhere else and not in your project.
 In such cases, you would use `withFileSystemBind()` of the Testcontainer.
+
+In the setup above, `withEnv()` is used to remove any security restrictions from APOC and algorithms extensions by setting `NEO4J_dbms_security_procedures_unrestricted`.
+
 Anyway, given the same test data as in <<prepare-test-data>>, a not so boring test now is green:
 
 [source,java]
@@ -291,9 +294,9 @@ It is also a good choice for infrastructure code like Neo4j-OGM and Spring Data 
 Neo4j-OGM runs against an embedded graph, over Bolt and HTTP, so it must be tested against all of those.
 The test-harness provides good support for that.
 
-The main advantage of using a Testcontainer is the fact that reassambles your later application setup the most.
+The main advantage of using a Testcontainer is the fact that it resembles your later application setup the best.
 While there are some use cases, most applications should not run an embedded version of Neo4j.
-Think about it: In a microservices world, where you usually more than one instance of an application running, should each instance bring it's own database?
+Think about it: In a microservices world, where you have usually more than one instance of an application running, should each instance bring it's own database?
 You cannot run Neo4j in https://neo4j.com/docs/operations-manual/current/clustering/[Causal Cluster mode] in an embedded scenario, so you have to synchronize those instances.
 Furthermore: If your application goes down, so would your database.
 

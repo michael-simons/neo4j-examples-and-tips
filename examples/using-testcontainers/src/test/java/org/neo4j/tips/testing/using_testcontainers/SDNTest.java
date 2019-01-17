@@ -50,7 +50,8 @@ public class SDNTest {
 			"/var/lib/neo4j/plugins/")
 		.withClasspathResourceMapping(
 			"/test-graph.db",
-			"/data/databases/graph.db", BindMode.READ_WRITE);
+			"/data/databases/graph.db", BindMode.READ_WRITE)
+		.withEnv("NEO4J_dbms_security_procedures_unrestricted", "apoc.*,algo.*");
 	// end::copy-plugin[]
 
 	// tag::sdn-neo4j-testcontainer-setup[]
