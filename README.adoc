@@ -7,3 +7,4 @@ A curated list of Neo4j SDN and OGM tips.
 * https://michael-simons.github.io/neo4j-sdn-ogm-tips/use_dynamic_finder.html[Create SDN repositories that find nodes by arbitrary properties]
 * https://michael-simons.github.io/neo4j-sdn-ogm-tips/what_are_the_building_blocks_of_sdn_and_ogm.html[What are the building blocks of SDN and OGM?]
 * https://michael-simons.github.io/neo4j-sdn-ogm-tips/validate_transaction_settings.html[Validate your Neo4j transaction settings]
+* https://michael-simons.github.io/neo4j-sdn-ogm-tips/sdn_and_causal_cluster.html[Use causal cluster support]

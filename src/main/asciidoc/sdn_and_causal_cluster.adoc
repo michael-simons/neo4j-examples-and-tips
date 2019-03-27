@@ -1,0 +1,101 @@
+= Use causal cluster support
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+
+[abstract]
+--
+You have setup a causal cluster and want to run SDN with OGM against it.
+Learn which dependencies are required and how to test it.
+--
+
+== What dependencies are needed and how you can use it?
+
+WARNING: Neo4j-OGM prior to 3.1.8 has a bug that leads to problems in some concurrent scenarios.
+Please use at least *3.1.8*.
+
+If you only want to connect against your causal cluster, you only need the official https://github.com/neo4j/neo4j-java-driver[Neo4j Java Driver].
+Configure your cluster URL like this:
+
+[source,properties]
+----
+spring.data.neo4j.uri=bolt+routing://your-cluster-member:7687
+----
+
+We recommend using a named DNS entry as entrypoint to your cluster.
+However, in an upcoming Spring Boot version, you'll be able to configure multiple URIs as well.
+
+If you want to use our Bookmark support, you'll need additional dependencies as described in <<cc-neo4j-deps>>
+
+[source,xml]
+[[cc-neo4j-deps]]
+.pom.xml, Dependencies needed to use `@Bookmark`
+----
+include::{examples}/sdn-and-causal-cluster/pom.xml[tags=cc-neo4j-deps,indent=0]
+----
+
+== General remarks about routing from SDN
+
+In the Spring world, the `readOnly` attribute on `@Transactional` is usually passed on onto the underlying technology as a hint.
+This is equally true for JDBC and JPA as well as for Bolt and OGM.
+In standalone mode of Bolt it doesn't do anything.
+In `bolt+routing` however, the driver will direct queries issued inside those transactions into readers.
+
+== How to use `@Bookmark`
+
+If you want to apply a "read your own write scenario" through `@Bookmark`, you should orchestrate the calls to a repository class from an outer service layer.
+
+See <<tx-write, ThingService>>:
+
+[source,java]
+[[tx-write]]
+.ThingService.java, orchestrating calls
+----
+include::{examples}/sdn-and-causal-cluster/src/main/java/org/neo4j/tips/sdn/causal_cluster/domain/ThingService.java[tags=tx-write,indent=0]
+----
+
+And the corresponding read in the same class:
+
+[source,java]
+[[tx-read]]
+.ThingService.java, orchestrating calls
+----
+include::{examples}/sdn-and-causal-cluster/src/main/java/org/neo4j/tips/sdn/causal_cluster/domain/ThingService.java[tags=tx-read,indent=0]
+----
+
+When called from a controller for example the writing call will store the bookmark retrieved from the server, so that the reading call can access it's own writes:
+
+[source,java]
+[[using-service]]
+.ThingController.java, using the server
+----
+include::{examples}/sdn-and-causal-cluster/src/main/java/org/neo4j/tips/sdn/causal_cluster/app/ThingController.java[tags=using-service,indent=0]
+----
+
+As you see, the controller asserts whether it could actually read it's own write.
+
+That can be also tested under load. 
+I have a created a custom JUnit 5 extension to easily bring up a causal cluster during test, find it here
+https://github.com/michael-simons/junit-jupiter-causal-cluster-testcontainer-extension[JUnit Jupiter Causal Cluster Testcontainer extension].
+
+It is not yet on Maven central and needs to be manually installed!
+
+[source,java]
+[[using-service]]
+.DemoApplicationTest.java
+----
+include::{examples}/sdn-and-causal-cluster/src/test/java/org/neo4j/tips/sdn/causal_cluster/DemoApplicationTest.java[tags=testing-cc-support,indent=0]
+----
+<1> This informs JUnit 5 that we need a causal cluster. Numbers of leader and followers are configurable.
+<2> This brings a up a full Spring Environment on a random port, we want load tests so mocks won't do
+<3> This configures an initializer that is needed to pass the cluster URL to the SDN with OGM
+<4> This is the injection point for the entry point to the cluster
+<5> Which is passed on to OGM
+<6> The `TestRestTemplate` knows about the random port from 2.
