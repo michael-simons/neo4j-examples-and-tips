@@ -14,6 +14,8 @@ Michael Simons <michael.simons@neo4j.com>
 --
 You have setup a causal cluster and want to run SDN with OGM against it.
 Learn which dependencies are required and how to test it.
+
+Please find the whole example here: link:{examples-gh-ref}/sdn-and-causal-cluster[`sdn-and-causal-cluster`].
 --
 
 == What dependencies are needed and how you can use it?
