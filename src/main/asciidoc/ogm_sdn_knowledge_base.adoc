@@ -1,0 +1,475 @@
+= OGM and SDN knowledge base
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+:toc:
+
+[abstract]
+--
+This is a knowledge base like checklist meant to support in you in
+
+* finding out what parts of Neo4j-OGM or Spring Data (Neo4j) an existing application uses
+* finding out if and on which version of Spring Boot you are
+* knowing which properties are relevant for your configuration
+* judging if you need custom configuration classes for your deployment or not
+* finding the relevant documentation and versions
+
+If possible, things have been ordered roughly from lower level connectivity and data access to data mapping specific
+or in other words, from very little abstraction to high abstraction.
+--
+
+TIP: Less is more! That applies to dependencies and to manual, programmatic configuration.
+     Most scenarios are covered with a restricted set of dependencies and configurable
+     with properties or one additional config bean.
+
+== Terminology
+
+A couple of classes have similar names which is confusing.
+Therefore some of the relevant classes have been included below.
+
+Classes named `Config` or `Configuration` are nearly everywhere.
+
+* `org.neo4j.driver.Config` is the pure Driver config
+* `org.neo4j.ogm.config.Configuration` is Neo4j-OGM config
+* `org.springframework.context.annotation.Configuration` is an annotation of the Spring Framework, annotating a class as a source of Beans and configuration.
+
+=== Neo4j Java Driver
+
+The Neo4j Java Driver is a Java based implementation of Neo4j's Bolt protocol and can be used throughout the Java ecosystem.
+It can be used standalone, in different frameworks and from within different languages on the JVM.
+It works with Groovy and Kotlin.
+There are integrations with https://quarkus.io/guides/neo4j[Quarkus] and https://github.com/micronaut-projects/micronaut-neo4j[Micronaut].
+
+The following classes are part of the Neo4j Java Driver
+
+* `org.neo4j.driver.Config`
+* `org.neo4j.driver.Driver`
+* `org.neo4j.driver.GraphDatabase`
+* `org.neo4j.driver.Record`
+* `org.neo4j.driver.Result`
+* `org.neo4j.driver.Session`
+
+=== Neo4j-OGM
+
+Neo4j-OGM is a general purpose Object Graph Mapper for Neo4j.
+Neo4j-OGM can be used in standalone applications and with other frameworks outside the Spring ecosystem.
+
+Neo4j-OGM supports a couple of different transports to a Neo4j database.
+It's primary transport is the Bolt transport, but it can use the HTTP endpoint as well as an embedded database.
+Read about https://michael-simons.github.io/neo4j-sdn-ogm-tips/what_are_the_building_blocks_of_sdn_and_ogm.html[the building blocks here].
+
+Neo4j-OGM has similar classes to the driver. Be aware they are only similar and have different semantics:
+
+* `org.neo4j.ogm.annotation.GeneratedValue`
+* `org.neo4j.ogm.annotation.Id`
+* `org.neo4j.ogm.annotation.NodeEntity`
+* `org.neo4j.ogm.annotation.RelationshipEntity`
+* `org.neo4j.ogm.driver.Driver`
+* `org.neo4j.ogm.drivers.bolt.driver.BoltDriver`
+* `org.neo4j.ogm.drivers.embedded.driver.EmbeddedDriver`
+* `org.neo4j.ogm.drivers.http.driver.HttpDriver`
+* `org.neo4j.ogm.model.Result`
+* `org.neo4j.ogm.session.Session`
+* `org.neo4j.ogm.session.SessionFactory`
+
+NOTE: Inside a Spring Boot application, both the Neo4j-OGM `SessionFactory` and `Session` are injectable (via `@Autowired` or constructor injection).
+      The `Session` will be a proxy, participating in Spring transactions and reopened transparently for you.
+      If you need access to the OGM session, this would be the preferred way. 
+      Opening one yourself via the `SessionFactory` is possible, but can lead to issues.
+
+
+=== Spring Data Neo4j vs. Spring Data Neo4j⚡️RX
+
+Spring Data Neo4j (in short SDN) is the current, officially released Spring Data module for Neo4j.
+It lives in VMware / Pivotal repositories but is maintained by Neo4j.
+It is part of the Spring Data release train and you get it when you generate a project with Neo4j support on start.spring.io.
+SDN is build on top of Neo4j-OGM.
+
+Spring Data Neo4j⚡️RX (in short SDN/RX) is a new approach to OGM in the Spring Ecosystem.
+It is currently in beta phase, but feature complete.
+It will eventually replace SDN.
+Object mapping is facilitated through Spring Data.
+While SDN/RX has a different approach and opinion on mappings, it supports *all* Spring Data features,
+like immutable entity-classes, reactive database access with Neo4j 4.0, query by example.
+
+The modules must not be used together in one application.
+
+SDN/RX brings it's one set of annotations for marking entities:
+
+* `org.neo4j.springframework.data.core.schema.Node`
+* `org.neo4j.springframework.data.core.schema.GeneratedValue`
+* `org.neo4j.springframework.data.core.schema.Id`
+* `org.neo4j.springframework.data.core.schema.Property`
+* `org.neo4j.springframework.data.core.schema.Relationship`
+
+=== Release trains
+
+All Spring data projects that are handled by the core Spring Data Team at VMware use so called "release trains".
+These release trains are given names that sort alphabetically.
+This is done to mitigate the fact that the modules that are part of a release train usually have different version numbers (Spring Data Neo4j is not the only Spring Data module).
+
+Modules and projects handled by Neo4j don't have that concept.
+Neo4j-OGM, the Neo4j Java driver, SDN/RX and the starters have standard version numbers only.
+
+== Spring Boot or not Spring?
+
+A project with a dependency to `org.springframework.boot:spring-boot-starter` and a single Java class similar to this:
+
+[source,java,indent=0]
+----
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DemoApplication {
+  public static void main(String[] args) {
+    SpringApplication.run(DemoApplication.class, args);
+  }
+}
+----
+
+is a Spring Boot application.
+The key indicator to look for is the presence of `@SpringBootApplication`.
+
+== Version management in Spring Boot applications
+
+One of Spring Boots main features and advantages is that it does version management for you.
+That is: You can declare most dependencies in your build file without a version.
+That works through a mechanism called https://info.michael-simons.eu/2019/08/22/whats-a-bill-of-material-bom-file/[Bill of material].
+Please read the linked post.
+
+To use a different version of a library than the one that is part of Spring, you don't declare that library
+as a dependency with a concrete version number.
+First, have a look if it's a managed library.
+You find all managed dependencies here: https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-dependency-versions.html[Managed Dependency Coordinates]
+and the corresponding property names under https://docs.spring.io/spring-boot/docs/2.3.0.M2/reference/html/appendix-dependency-versions.html#dependency-versions-properties[Version Properties].
+
+If you're library is on that list, you can overwrite the version of it as follows:
+
+=== Maven
+
+Define a Maven property with the relevant name, i.e.
+
+[source,xml]
+----
+<properties>
+  <neo4j-ogm.version>3.2.9</neo4j-ogm.version>
+</properties>
+----
+
+=== Gradle
+
+Add a `gradle.properties` to your build overwriting the properties in question:
+
+[source,properties]
+----
+neo4j-ogm.version = 3.2.9
+----
+
+== Custom programmatic configuration for Neo4j-OGM?
+
+With Spring Boot it is often possible to abstain from a lot of custom, programmatic configuration.
+Instead you can rely on Spring Boot's auto configuration mechanism
+(find some https://speakerdeck.com/michaelsimons/its-a-kind-of-magic-custom-spring-boot-starter[slides] and talks about that https://www.youtube.com/watch?v=wSWA63rZfGo[here] and https://www.youtube.com/watch?v=uCE3x4-GQ0k[here])
+
+There are some rare cases where programmatic configuration is necessary.
+
+=== Things you can configure via properties and annotations
+
+* Database connection via
+  `spring.data.neo4j.uri`
+  It supports `bolt`, `bolt+routing`, `neo4j` for Bolt transport, `http` and `https` for Http transport and `file` for embedded if you must.
+* `spring.data.neo4j.username` and `spring.data.neo4j.password` are complementary for the above `uri` property.
+* `spring.data.neo4j.use-native-types` can be set to true with the necessary libraries on the classpath to use native date and spatial types without converters
+* The packages to look for entities can be configured via `@EntityScan`, see <<entity-scan>>
+* The same applies for Neo4j repositories
+
+[source,java]
+[[entity-scan]]
+.Neo4jConfig.java configuring the package to scan for entities
+----
+@EntityScan("your.domain.package") // <.>
+@EnableNeo4jRepositories("your.repository.pacakge") // <.>
+public class Neo4jConfig {
+}
+----
+<.> One or more packages to scan for annoted entities (`@NodeEntity` and `@RelationshipEntity`)
+<.> One or more packages to scan for interfaces extending (`Neo4jRepository` or generic Spring Data repository interfaces)
+
+=== Configuring the Neo4j Java Driver
+
+In case you want to use only the Java Driver in your Spring Boot application or you only want to use the Bolt transport for your Neo4j-OGM application, 
+you can bring in the https://neo4j.github.io/neo4j-java-driver-spring-boot-starter/current/[Neo4j Spring Boot Starter].
+The only thing it does is to configure a Spring bean of type `org.neo4j.driver.Driver`.
+That bean is automatically recognized by Neo4j-OGM _as long as you don't put in other custom, programmatic Java configuration_.
+
+The above starter gives you direct access to *all* configuration options that the Neo4j Java Driver others, via Spring Boots properties 
+(applicable from files, config server etc.). Here is the https://neo4j.github.io/neo4j-java-driver-spring-boot-starter/current/#configurationoptions[full reference].
+
+NOTE: Be aware that the configuration prefix needs to be `org.neo4j.driver` in this case! If you don't provide `org.neo4j.driver.uri`, 
+      the additional starter will be inactive!
+      
+=== Specialized Neo4j-OGM configuration
+
+If you need to configure Neo4j-OGM beyond the currently exposed properties inside Spring Boot, it is enough to provide a bean of type `org.neo4j.ogm.config.Configuration`.
+With the latest versions of Spring Boot 2.1 and 2.2 it is not necessary anymore to add a Neo4j-OGM SessionFactory.
+Your configuration would look similar like this:
+
+[source,java]
+[[entity-scan]]
+.Neo4jConfig.java with custom OGM configuration
+----
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
+
+@Configuration
+@EnableNeo4jRepositories("your.repository.pacakge")
+public class Neo4jConfig {
+
+	@Bean
+	org.neo4j.ogm.config.Configuration neo4jOgmConfiguration() {
+		return new org.neo4j.ogm.config.Configuration.Builder().credentials("some user", "somepassword")
+			.withBasePackages("your.domain.package")
+			.strictQuerying()
+			.useNativeTypes()
+			.database("myDatabase")
+			.uri("neo4j://somehost")
+			.build();
+	}
+}
+----
+
+You don't usually need more.
+The best choice however is to see if our additional Neo4j Spring Boot starter already solves your problem.
+
+== Using exiting properties
+
+WARNING: In most cases, there is no reason to use `@Value` from Spring Boot to map custom properties.
+         You can always inject the following classes (depending on the starter you are using):
+         
+         * `org.springframework.boot.autoconfigure.data.neo4j.Neo4jProperties` (For the current Spring Boot Neo4j integration)
+         * `org.neo4j.driver.springframework.boot.autoconfigure.Neo4jDriverProperties` (For the new Neo4j Spring Boot Start)
+         
+         Those will automatically contain the configured properties, they don't need to be duplicated in your classes.
+         You can just build on top of them, as shown https://github.com/neo4j/neo4j-java-driver-spring-boot-starter/blob/4.0.0.1/examples/dedicated-routing-driver/src/main/java/org/neo4j/doc/driver/springframework/boot/dedicated_routing_driver/RoutingDriverConfiguration.java#L23-L27[here]. 
+
+[[coordinates]]
+== Maven / Gradle coordinates
+
+Those are the official Maven central coordinates, given in the form `groupId:artifactId` for a quick reference.
+
+=== Driver
+
+[[neo4j-java-driver-coordinates]]
+==== Neo4j Java Driver
+
+For a Spring Boot application, always use: `org.neo4j.driver:neo4j-java-driver-spring-boot-starter`.
+Use `org.neo4j.driver:neo4j-java-driver` only for Spring applications _not_ based on Spring Boot.
+Don't add both.
+
+The starter gives you IDE support in `application.properties` and `application.yml` for all configuration options.
+
+=== Data mapping and higher level abstractions
+
+[[neo4j-ogm-coordinates]]
+==== Neo4j-OGM
+
+* The core module (You always need this): `org.neo4j:neo4j-ogm-core`
+* One of the transport modules (You should have only *one* per dependency scope)
+** The Bolt implementation: `org.neo4j:neo4j-ogm-bolt-driver`
+** The embedded implementation: `org.neo4j:neo4j-ogm-embedded-driver`
+** The HTT implementation: `org.neo4j:neo4j-ogm-http-driver`
+* Optional (only supported for the Bolt and embedded implementation): Support for additional Neo4j native types
+** Native types for the Bolt implementation: `org.neo4j:neo4j-ogm-bolt-native-types`
+** Native types for the embedded implementation: `org.neo4j:neo4j-ogm-embedded-native-types`
+
+==== Spring Data Neo4j
+
+For a Spring Boot application, always use: `org.springframework.boot:spring-boot-starter-data-neo4j`.
+Use `org.springframework.data:spring-data-neo4j` only for Spring applications _not_ based on Spring Boot.
+Don't add both.
+
+In either way, you will get all the necessary, transitive dependencies.
+
+NOTE: For Spring Data Neo4j it is not necessary to add the core or bolt module of <<neo4j-ogm-coordinates,Neo4j-OGM>>.
+      They are transitive dependencies.
+      To be able to use the other transports, you have to configure the relevant dependencies.
+
+You can add `org.neo4j.driver:neo4j-java-driver-spring-boot-starter` to a Spring Boot based SDN application
+and Neo4j-OGM and SDN will recognize the driver bean.
+Please read more about it https://neo4j.github.io/neo4j-java-driver-spring-boot-starter/current/#neo4j-ogm-integration[here].
+
+==== SDN/RX
+
+For a Spring Boot application, always use: `org.neo4j.springframework.data:spring-data-neo4j-rx-spring-boot-starter`.
+Use `org.neo4j.springframework.data:spring-data-neo4j-rx` only for Spring applications _not_ based on Spring Boot.
+
+In either way, you will get all the necessary, transitive dependencies.
+
+NOTE: For SDN/RX it is not necessary to add the <<neo4j-java-driver-coordinates>>.
+      You'll receive the Starter for the Driver through the SDN/RX starter.
+      You'll receive the Driver through SDN/RX.
+
+== Documentation
+
+Given the various modules, the documentation lives in a couple of places as well.
+
+This checklist is part of repository containing a bunch of useful other information.
+Please find it here:
+https://github.com/michael-simons/neo4j-sdn-ogm-tips
+
+=== Driver
+
+==== Neo4j Java Driver
+
+* https://neo4j.com/docs/driver-manual/current/[The Neo4j Drivers Manual v4.0 (Reference)]
+* https://neo4j.com/docs/api/java-driver/current[Java API docs]
+
+==== Neo4j Spring Boot Starter
+
+* http://neo4j.github.io/neo4j-java-driver-spring-boot-starter/current/[Neo4j Spring Boot Starter]
+
+=== Data mapping and higher level abstractions
+
+==== Neo4j-OGM
+
+* https://neo4j.com/docs/ogm-manual/current/[Neo4j-OGM - An Object Graph Mapping Library for Neo4j (Reference)]
+* https://github.com/neo4j/neo4j-ogm/wiki/Versions[Neo4j-OGM version compatibility matrix]
+
+==== Spring Data Neo4j
+
+* https://docs.spring.io/spring-data/data-neo4j/docs/current/reference/html/[Spring Data Neo4j Reference Documentation]
+* https://docs.spring.io/spring-data/neo4j/docs/current/api/[Java API docs]
+
+==== SDN/RX
+
+* http://neo4j.github.io/sdn-rx/current/[Spring Data Neo4j⚡️RX]
+
+=== Relevant Spring documentation
+
+* https://docs.spring.io/spring-boot/docs/current/reference/html/[Spring Boot Reference Documentation]
+* https://docs.spring.io/spring/docs/current/spring-framework-reference/[Spring Framework Reference Documentation]
+
+== Various important things
+
+=== Causal cluster setup
+
+Please read https://info.michael-simons.eu/2020/02/03/spring-data-neo4j-neo4j-ogm-and-osiv/[Spring Data Neo4j, Neo4j-OGM and Open Session in View (OSIV)].
+If you are on Spring Boot before Spring Boot 2.3, you have to turn off the Open-Session-In-View-Filter, otherwise all queries will go to the leader.
+
+You can do this via a configuration property: `spring.data.neo4j.open-in-view=false`.
+
+=== Routing driver
+
+There are a couple of ways to configure a driver to use routing.
+The canonical way is to use `bolt+routing://` or `neo4j://` from Neo4j 4.0 on upwards with a single entry URL into the cluster.
+The driver manual is very clear on that: https://neo4j.com/docs/driver-manual/current/client-applications/#driver-connection-uris[Connection URIs].
+
+You can configure multiple URIs through a custom Neo4j-OGM configuration as follows:
+
+[source,java]
+----
+@Bean
+org.neo4j.ogm.config.Configuration neo4jOgmConfiguration() {
+	return new org.neo4j.ogm.config.Configuration.Builder()
+		.credentials("some user", "somepassword")
+		.uris(
+			"bolt+routing://server1",
+			"bolt+routing://server2",
+			"bolt+routing://server3")
+		.build();
+}
+----
+
+or use a setup as shown in our example here: https://github.com/neo4j/neo4j-java-driver-spring-boot-starter/blob/4.0.0.1/examples/dedicated-routing-driver/src/main/java/org/neo4j/doc/driver/springframework/boot/dedicated_routing_driver/RoutingDriverConfiguration.java[`RoutingDriverConfiguration`].
+
+The idea is to define only one single property containing multiple URIs and build your driver instance with that.
+
+A better solution however is the usage of a custom https://neo4j.com/docs/driver-manual/current/client-applications/#driver-resolver-function[resolver function].
+
+Given some arbitrary `org.neo4j.driver.net.ServerAddressResolver` like this:
+
+[source,java]
+.Arbitrary server address resolver
+----
+ServerAddressResolver serverAddressResolver = address -> {
+	if ("datacenter1".equals(address.host())) {
+		return new HashSet<>(
+			Arrays.asList(ServerAddress.of("dc1-core1", 7687), ServerAddress.of("dc1-core2", 7687)));
+	} else {
+		return new HashSet<>(Arrays.asList(ServerAddress.of("other-core", 7687)));
+	}
+};
+----
+
+Here's how to use it with OGM+SDN only:
+
+[source,java]
+.Use with OGM/SDN
+----
+import java.util.Arrays;
+import java.util.HashSet;
+
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.springframework.boot.autoconfigure.data.neo4j.Neo4jProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class Neo4jConfig {
+
+
+	@Bean
+	public Driver neo4jDriver(Neo4jProperties springDataNeo4jProperties) {
+
+		Config config = Config.builder()
+			.withResolver(serverAddressResolver).build();
+
+		return GraphDatabase.driver(springDataNeo4jProperties.getUri(),
+			AuthTokens.basic(springDataNeo4jProperties.getUsername(), springDataNeo4jProperties.getPassword()), config);
+	}
+}
+----
+
+Or use with the Neo4j Spring Boot starter (mind the slightly different import).
+
+[source,java]
+.Use with Neo4j Spring Boot Starter
+----
+import java.util.Arrays;
+import java.util.HashSet;
+
+import org.neo4j.driver.AuthToken;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.springframework.boot.autoconfigure.Neo4jDriverProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+
+@Configuration
+public class DriverWithCustomResolverFunctionConfiguration {
+
+	@Bean
+	public Driver neo4jDriver(Neo4jDriverProperties neo4jDriverProperties) {
+
+		Config config = Config.builder()
+			.withResolver(serverAddressResolver).build();
+		AuthToken authToken = neo4jDriverProperties.getAuthToken();
+
+		return GraphDatabase.driver(neo4jDriverProperties.getUri(), authToken, config);
+	}
+}
+----
