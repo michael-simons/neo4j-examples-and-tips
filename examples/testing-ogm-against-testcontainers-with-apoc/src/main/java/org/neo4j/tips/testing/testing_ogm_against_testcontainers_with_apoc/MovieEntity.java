@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.tips.testing.testing_ogm_against_embedded_with_apoc;
+package org.neo4j.tips.testing.testing_ogm_against_testcontainers_with_apoc;
 
 import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;

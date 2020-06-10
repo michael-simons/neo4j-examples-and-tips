@@ -14,28 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.tips.testing.testing_ogm_against_embedded_with_apoc;
+package org.neo4j.tips.testing.testing_ogm_against_testcontainers_with_apoc;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.neo4j.repository.Neo4jRepository;
 
 /**
  * @author Michael J. Simons
  */
-@RestController
-@RequestMapping("/movies")
-public class MovieController {
-
-	private final MovieRepository movieRepository;
-
-	public MovieController(MovieRepository movieRepository) {
-		this.movieRepository = movieRepository;
-	}
-
-	@GetMapping
-	public Iterable<MovieEntity> getMovies() {
-
-		return movieRepository.findAll();
-	}
+public interface MovieRepository extends Neo4jRepository<MovieEntity, Long> {
 }

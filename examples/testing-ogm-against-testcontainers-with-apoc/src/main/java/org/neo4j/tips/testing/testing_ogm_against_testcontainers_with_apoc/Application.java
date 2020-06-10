@@ -14,12 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.tips.testing.testing_ogm_against_embedded_with_apoc;
+package org.neo4j.tips.testing.testing_ogm_against_testcontainers_with_apoc;
 
-import org.springframework.data.neo4j.repository.Neo4jRepository;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
  * @author Michael J. Simons
  */
-public interface MovieRepository extends Neo4jRepository<MovieEntity, Long> {
+@SpringBootApplication
+public class Application {
+
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
 }
