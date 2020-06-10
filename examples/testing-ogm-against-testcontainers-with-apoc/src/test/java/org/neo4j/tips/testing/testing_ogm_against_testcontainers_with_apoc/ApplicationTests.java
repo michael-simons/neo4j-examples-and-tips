@@ -86,7 +86,7 @@ class ApplicationTests {
 		.withEnv("NEO4J_dbms_security_procedures_unrestricted", "apoc.*");
 
 	@BeforeAll
-	static void b() {
+	static void createFixture() {
 
 		try (Driver driver = GraphDatabase
 			.driver(neo4j.getBoltUrl(), AuthTokens.basic("neo4j", neo4j.getAdminPassword()));
