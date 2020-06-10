@@ -1,0 +1,5 @@
+### Some movies
+GET localhost:8080/movies
+
+### Actuator
+GET localhost:8080/actuator/info
