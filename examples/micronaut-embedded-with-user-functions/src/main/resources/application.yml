@@ -1,0 +1,3 @@
+micronaut:
+  application:
+    name: embedded_with_user_functions
