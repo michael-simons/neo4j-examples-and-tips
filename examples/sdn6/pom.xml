@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>11</java.version>
-		<reactor-bom.version>2020.0.0-SNAPSHOT</reactor-bom.version>
+		<reactor-bom.version>2020.0.0-SNAPSHOT</reactor-bom.version> <!-- Will not be necessary in a couple of days -->
 	</properties>
 
 	<dependencies>
