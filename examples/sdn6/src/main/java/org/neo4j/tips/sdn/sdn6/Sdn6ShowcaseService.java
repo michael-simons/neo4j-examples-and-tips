@@ -1,6 +1,9 @@
 package org.neo4j.tips.sdn.sdn6;
 
-import static org.neo4j.cypherdsl.core.Cypher.*;
+import static org.neo4j.cypherdsl.core.Cypher.name;
+import static org.neo4j.cypherdsl.core.Cypher.node;
+import static org.neo4j.cypherdsl.core.Cypher.parameter;
+import static org.neo4j.cypherdsl.core.Cypher.property;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -16,11 +19,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.neo4j.core.ReactiveNeo4jClient;
 import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
-import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager;
-import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.ReactiveTransactionManager;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
