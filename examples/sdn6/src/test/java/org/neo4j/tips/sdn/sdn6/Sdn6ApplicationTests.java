@@ -11,7 +11,10 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 @SpringBootTest
 class Sdn6ApplicationTests {
@@ -72,7 +75,7 @@ class Sdn6ApplicationTests {
 
 	@Test
 	void findEntitiesViaRepositoryShouldWork() {
-
+		TransactionalOperator.create(transactionManager).transactional(
 		showcaseService.findEntitiesViaRepository(".*Matrix.*")
 
 			.doOnNext(m -> {
@@ -82,7 +85,7 @@ class Sdn6ApplicationTests {
 				m.getActorsAndRoles().forEach((p, r) -> {
 					System.out.println(p.getName() + " " + r.getRoles());
 				});
-			})
+			}))
 			.as(StepVerifier::create)
 			.expectNextCount(3)
 			.verifyComplete();

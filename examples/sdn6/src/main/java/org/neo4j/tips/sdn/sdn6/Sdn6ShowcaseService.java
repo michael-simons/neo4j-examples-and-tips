@@ -16,8 +16,11 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.neo4j.core.ReactiveNeo4jClient;
 import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
+import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -39,14 +42,14 @@ public class Sdn6ShowcaseService {
 		this.movieRepository = movieRepository;
 	}
 
-	String callSimpleProcedureViaDriverImperative() {
+	public String callSimpleProcedureViaDriverImperative() {
 
 		try (Session session = driver.session()) {
 			return session.readTransaction(tx -> tx.run("call db.info() yield name").single().get("name").asString());
 		}
 	}
 
-	Flux<String> callSimpleProcedureViaDriverReactive() {
+	public Flux<String> callSimpleProcedureViaDriverReactive() {
 		return Flux.usingWhen(
 			Mono.fromSupplier(driver::rxSession),
 			session -> session.readTransaction(tx -> tx.run("call db.info() yield name").records()),
@@ -54,17 +57,17 @@ public class Sdn6ShowcaseService {
 		).map(r -> r.get("name").asString());
 	}
 
-	@Transactional // That works only with the client, template and repositories
-	Flux<String> callSimpleProcedureViaClientInsideSpringTransaction() {
-
+	// If you want to run that method in @Transactional, an additional
+	// Transaction manager needs to be provided for the system (or any other database).
+	public Flux<String> callSimpleProcedureViaClientInsideSpringTransaction() {
 		return client.query("call db.info() yield name")
-			.in("system") // Specifying the database is of coure optional
+			.in("system") // Specifying the database is of course optional
 			.fetchAs(String.class)
 			.all();
 	}
 
-	@Transactional
-	Flux<Person> findEntitiesViaTemplate(String nameRegex) {
+	@Transactional // That works only with the client, template and repositories
+	public Flux<Person> findEntitiesViaTemplate(String nameRegex) {
 
 		return this.template.findAll(
 			Cypher // Showcase of the Cypher-DSL, but can also be a plain String based String
@@ -78,23 +81,23 @@ public class Sdn6ShowcaseService {
 	}
 
 	@Transactional
-	Mono<Person> saveEntityViaTemplate(Person person) {
+	public Mono<Person> saveEntityViaTemplate(Person person) {
 		return this.template.save(person);
 	}
 
 	@Transactional
-	Flux<Movie> findEntitiesViaRepository(String titleRegex) {
+	public Flux<Movie> findEntitiesViaRepository(String titleRegex) {
 
 		return this.movieRepository.findAllByTitleMatches(titleRegex);
 	}
 
 	@Transactional
-	Mono<Movie> saveEntityViaRepository(Movie movie) {
+	public Mono<Movie> saveEntityViaRepository(Movie movie) {
 		return this.movieRepository.save(movie);
 	}
 
 	@Transactional
-	Flux<String> selectArbitraryThingsViaClient(Long movieId) {
+	public Flux<String> selectArbitraryThingsViaClient(Long movieId) {
 		return this.client
 			.query("MATCH (:Person) - [r:ACTED_IN] -> (m:Movie) WHERE id(m) = $id RETURN r.roles AS roles")
 			// Another query would be, avoiding that embarrassing client side sorting and use ordering instead
@@ -110,7 +113,7 @@ public class Sdn6ShowcaseService {
 		return movieRepository.findVirtualMovieViaApoc();
 	}
 
-	// @Transactional // not supported atm on reative transactional findByExample
+	@Transactional
 	public Flux<Movie> findByExample(Movie movie) {
 		var byExample = Example.of(movie,
 			ExampleMatcher.matchingAny()
