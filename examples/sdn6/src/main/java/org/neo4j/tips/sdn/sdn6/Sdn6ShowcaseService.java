@@ -12,6 +12,8 @@ import org.neo4j.cypherdsl.core.Cypher;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.reactive.RxSession;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.neo4j.core.ReactiveNeo4jClient;
 import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
 import org.springframework.data.neo4j.repository.query.Query;
@@ -106,5 +108,15 @@ public class Sdn6ShowcaseService {
 
 	public Mono<Movie> findVirtualMovieViaApoc() {
 		return movieRepository.findVirtualMovieViaApoc();
+	}
+
+	// @Transactional // not supported atm on reative transactional findByExample
+	public Flux<Movie> findByExample(Movie movie) {
+		var byExample = Example.of(movie,
+			ExampleMatcher.matchingAny()
+				.withIgnoreNullValues()
+				.withIgnoreCase().withStringMatcher(
+			ExampleMatcher.StringMatcher.CONTAINING));
+		return movieRepository.findAll(byExample);
 	}
 }

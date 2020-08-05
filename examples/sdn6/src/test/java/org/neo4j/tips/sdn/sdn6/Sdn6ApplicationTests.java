@@ -14,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
-@Transactional
 class Sdn6ApplicationTests {
 
 	@Autowired
@@ -122,6 +121,15 @@ class Sdn6ApplicationTests {
 					assertThat(entry.getValue().getRoles()).containsExactly("himself");
 				});
 			})
+			.verifyComplete();
+	}
+
+	@Test
+	void findByExampleShouldWork() {
+
+		showcaseService.findByExample(new Movie("Matrix", null))
+			.as(StepVerifier::create)
+			.expectNextCount(3)
 			.verifyComplete();
 	}
 }
