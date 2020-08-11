@@ -1,0 +1,53 @@
+= Spring Data Neo4j 6 on Liberty (Simple Deployment)
+
+== SDN CDI Config
+
+This the required configuration for Spring Data Neo4j 6 in a CDI environment:
+
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Disposes;
+import javax.enterprise.inject.Produces;
+
+import org.neo4j.driver.AuthTokens;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Logging;
+
+public class Neo4jConfig {
+
+	@Produces
+	@ApplicationScoped
+	public Driver driver() {
+		return GraphDatabase
+			.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "secret"), Config.builder().withLogging(
+				Logging.slf4j()).build());
+	}
+
+	public void close(@Disposes Driver driver) {
+		driver.close();
+	}
+}
+----
+
+Note: Liberty seems to require an empty `beans.xml` in `META-INF`.
+
+== Running
+
+[source,shell]
+----
+docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/secret'  neo4j:4.0.3 // <.>
+mvn liberty:dev <.>
+----
+<.> Start a Neo4j database
+<.> Start liberty in dev mode.
+
+Goto the Neo4j browser and play the first step of the movies graph: http://localhost:7474/browser/?cmd=play&arg=movies[`:play movies`].
+Then access the rest API on your liberty like this
+
+[source,shell]
+----
+curl localhost:9080/sdn6-on-liberty/api/movies
+----

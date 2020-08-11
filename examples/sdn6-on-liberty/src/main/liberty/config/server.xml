@@ -1,0 +1,18 @@
+<server description="Sample Liberty server">
+
+	<featureManager>
+		<feature>servlet-4.0</feature>
+		<feature>cdi-2.0</feature>
+		<feature>jaxrs-2.1</feature>
+	</featureManager>
+
+	<variable name="default.http.port" defaultValue="9080"/>
+	<variable name="default.https.port" defaultValue="9443"/>
+
+	<httpEndpoint host="*" httpPort="${default.http.port}"
+				  httpsPort="${default.https.port}" id="defaultHttpEndpoint"/>
+
+	<webApplication id="sdn6-on-liberty"
+						   location="sdn6-on-liberty.war"
+						   name="sdn6-on-liberty"/>
+</server>
