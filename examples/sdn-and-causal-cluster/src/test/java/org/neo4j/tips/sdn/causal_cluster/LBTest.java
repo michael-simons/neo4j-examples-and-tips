@@ -161,6 +161,7 @@ class LBTest {
 		if (cnt < runningServers.size() / 2) {
 			fail("Only " + cnt + " servers of a cluster with " + runningServers.size() + "servers have been used");
 		}
+		log.info(cnt + " of " + runningServers.size() + " have been queried.");
 	}
 }
 // end::testing-cc-support[]
