@@ -45,6 +45,10 @@ public class Thing {
 		this.name = "Thing #" + this.sequenceNumber;
 	}
 
+	public Long getId() {
+		return id;
+	}
+
 	public String getName() {
 		return name;
 	}

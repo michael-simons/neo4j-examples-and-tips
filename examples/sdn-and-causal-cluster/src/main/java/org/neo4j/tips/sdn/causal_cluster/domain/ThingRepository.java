@@ -9,7 +9,7 @@ import org.springframework.data.neo4j.repository.Neo4jRepository;
  * @author Michael J. Simons
  */
 public interface ThingRepository extends Neo4jRepository<Thing, Long> {
-	Optional<Thing> findOneByName(String name);
+	Optional<Thing> findOneBySequenceNumber(Long sequenceNumber);
 
 	List<Thing> findAllBySequenceNumberGreaterThanEqual(long currentSequence);
 }

@@ -16,12 +16,13 @@
  */
 package org.neo4j.tips.sdn.causal_cluster.domain;
 
+import io.github.resilience4j.retry.annotation.Retry;
+
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.ogm.session.Session;
-import org.neo4j.tips.sdn.causal_cluster.domain.Thing;
-import org.neo4j.tips.sdn.causal_cluster.domain.ThingRepository;
 import org.springframework.data.neo4j.annotation.UseBookmark;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 // tag::tx-write[]
 @Service
+@Retry(name = "neo4j")
 public class ThingService {
 	// end::tx-write[]
 	private final Session session;
@@ -68,6 +70,11 @@ public class ThingService {
 		return thingRepository.findAllBySequenceNumberGreaterThanEqual(sequence);
 	}
 	// end::tx-read[]
+
+	@Transactional(readOnly = true)
+	public Optional<Thing> findBySequenceNumber(Long sequence) {
+		return thingRepository.findOneBySequenceNumber(sequence);
+	}
 
 	// tag::tx-write[]
 }

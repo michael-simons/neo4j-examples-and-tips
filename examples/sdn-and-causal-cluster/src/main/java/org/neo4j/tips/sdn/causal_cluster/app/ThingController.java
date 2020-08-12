@@ -19,13 +19,17 @@ package org.neo4j.tips.sdn.causal_cluster.app;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.websocket.server.PathParam;
+
 import org.neo4j.tips.sdn.causal_cluster.domain.Thing;
 import org.neo4j.tips.sdn.causal_cluster.domain.ThingService;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * @author Michael J. Simons
@@ -56,5 +60,16 @@ public class ThingController {
 
 		return newThing;
 	}
+	// end::using-service[]
+
+	@GetMapping("/get/{sequence}")
+	public Thing get(@PathVariable("sequence") Long sequence) {
+
+		return this.thingService.findBySequenceNumber(sequence)
+			.orElseThrow(() -> new ResponseStatusException(
+				HttpStatus.NOT_FOUND, "Thing with sequence " + sequence + " + not found"));
+	}
+
+	// tag::using-service[]
 }
 // end::using-service[]

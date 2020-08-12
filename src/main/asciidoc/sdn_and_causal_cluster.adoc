@@ -87,8 +87,6 @@ That can be also tested under load.
 I have a created a custom JUnit 5 extension to easily bring up a causal cluster during test, find it here
 https://github.com/michael-simons/junit-jupiter-causal-cluster-testcontainer-extension[JUnit Jupiter Causal Cluster Testcontainer extension].
 
-It is not yet on Maven central and needs to be manually installed!
-
 [source,java]
 [[using-service]]
 .DemoApplicationTest.java

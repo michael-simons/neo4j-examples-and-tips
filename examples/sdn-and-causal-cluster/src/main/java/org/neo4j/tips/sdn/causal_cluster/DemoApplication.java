@@ -16,6 +16,10 @@
  */
 package org.neo4j.tips.sdn.causal_cluster;
 
+import io.github.resilience4j.retry.RetryRegistry;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.neo4j.annotation.EnableBookmarkManagement;
@@ -26,7 +30,14 @@ import org.springframework.data.neo4j.annotation.EnableBookmarkManagement;
 @SpringBootApplication
 @EnableBookmarkManagement
 public class DemoApplication {
+
+	private final static Log log = LogFactory.getLog(DemoApplication.class);
+
 	public static void main(String... args) {
 		SpringApplication.run(DemoApplication.class, args);
+	}
+
+	public DemoApplication(RetryRegistry retry) {
+		retry.retry("neo4j").getEventPublisher().onRetry(e -> log.info("Retried " + e.toString()));
 	}
 }

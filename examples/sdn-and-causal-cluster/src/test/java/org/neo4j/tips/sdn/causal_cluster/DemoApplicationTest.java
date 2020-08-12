@@ -28,8 +28,8 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
+import org.neo4j.junit.jupiter.causal_cluster.CausalCluster;
 import org.neo4j.junit.jupiter.causal_cluster.NeedsCausalCluster;
-import org.neo4j.junit.jupiter.causal_cluster.Neo4jUri;
 import org.neo4j.tips.sdn.causal_cluster.domain.Thing;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,36 +41,34 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * @author Michael J. Simons
  */
 // tag::testing-cc-support[]
-@NeedsCausalCluster // <1>
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT) // <2>
-@ContextConfiguration(initializers = { DemoApplicationTest.Initializer.class }) // <3>
+@NeedsCausalCluster // <.>
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT) // <.>
 class DemoApplicationTest {
 
-	@Neo4jUri // <4>
+	@CausalCluster // <.>
 	private static String clusterUri;
 
-	static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-		public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
-			TestPropertyValues.of(
-				"spring.data.neo4j.uri=" + clusterUri, // <5>
-				"spring.data.neo4j.username=neo4j",
-				"spring.data.neo4j.password=password"
-			).applyTo(configurableApplicationContext.getEnvironment());
-		}
+	@DynamicPropertySource
+	static void neo4jProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.data.neo4j.uri", () -> clusterUri); // <.>
+		registry.add("spring.data.neo4j.username", () -> "neo4j");
+		registry.add("spring.data.neo4j.password", () -> "password");
 	}
 
 	@Autowired
-	TestRestTemplate restTemplate; // <6>
+	TestRestTemplate restTemplate; // <.>
 
 	@RepeatedTest(10)
 	void useBookmarkUnderLoad() throws InterruptedException {
 
-		int numberOfRequests = 10;
+		int numberOfParallelTests = 10;
 
 		Callable<Thing> callableRequest = () -> {
 			ResponseEntity<Thing> response = restTemplate
@@ -82,7 +80,7 @@ class DemoApplicationTest {
 		};
 
 		ExecutorService executor = Executors.newCachedThreadPool();
-		List<Future<Thing>> calledRequests = executor.invokeAll(IntStream.range(0, numberOfRequests)
+		List<Future<Thing>> calledRequests = executor.invokeAll(IntStream.range(0, numberOfParallelTests)
 			.mapToObj(i -> callableRequest).collect(toList()));
 		try {
 			calledRequests.forEach(request -> {
