@@ -104,9 +104,9 @@ class LBTest {
 	}
 
 	@Test
-	void useBookmarkUnderLoad() throws InterruptedException {
+	void queryThings() throws InterruptedException {
 
-		int numberOfParallelRequests = 16;
+		int numberOfParallelRequests = 20;
 		for (int i = 0; i < 50; ++i) {
 			Callable<Thing> callableRequest = () -> {
 				ResponseEntity<Thing> response = restTemplate
