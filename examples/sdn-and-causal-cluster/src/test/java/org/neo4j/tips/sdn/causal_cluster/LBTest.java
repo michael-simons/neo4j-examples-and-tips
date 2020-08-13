@@ -61,7 +61,7 @@ import org.springframework.test.context.DynamicPropertySource;
 /**
  * @author Michael J. Simons
  */
-@NeedsCausalCluster(numberOfCoreServers = 5)
+@NeedsCausalCluster(numberOfCoreServers = 4, numberOfReadReplicas = 2)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class LBTest {
 
