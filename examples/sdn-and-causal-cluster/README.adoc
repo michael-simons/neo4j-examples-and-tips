@@ -1,15 +1,4 @@
 = sdn-and-causal-cluster
 
 This example uses the https://github.com/michael-simons/junit-jupiter-causal-cluster-testcontainer-extension[JUnit Jupiter Causal Cluster Testcontainer extension].
-
-This extension is not yet available on central.
-Please clone it and build it like this:
-
-[source,bash]
-----
-git clone https://github.com/michael-simons/junit-jupiter-causal-cluster-testcontainer-extension
-cd junit-jupiter-causal-cluster-testcontainer-extension
-./mvnw -DskipTests clean install
-----
-
 You'll need an installed https://www.docker.com[Docker] on your machine to use this project.
