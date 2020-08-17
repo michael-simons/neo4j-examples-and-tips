@@ -87,7 +87,7 @@
 		<dependency>
 			<groupId>eu.michael-simons.neo4j</groupId>
 			<artifactId>junit-jupiter-causal-cluster-testcontainer-extension</artifactId>
-			<version>4.0.2.3-SNAPSHOT</version>
+			<version>2020.0.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
