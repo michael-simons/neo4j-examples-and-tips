@@ -1,0 +1,136 @@
+= Examples for using various retry mechanism.
+
+This directory contains a couple of examples how to retry failed transactions in the context of Neo4j.
+
+It consists of a client and several implementations of a REST web service.
+All of them are Java 11 programms.
+
+== The client
+
+Build and run as follows:
+
+[source,console]
+----
+./mvnw clean compile
+./mvnw exec:java -Dexec.mainClass="org.neo4j.tips.cluster.client.Application"
+----
+
+== The REST service 
+
+The REST service provides:
+
+=== A list of movies
+
+`localhost:8080/api/movies` returns an array of movies:
+
+[source,console]
+----
+curl localhost:8080/api/movies | jq
+----
+
+Example:
+
+[source,json]
+----
+[
+  {
+    "title": "A Few Good Men"
+  },
+  {
+    "title": "A League of Their Own"
+  },
+  {
+    "title": "Apollo 13"
+  }
+]
+----
+
+=== An authenticated "watch" resource
+
+[source,console]
+----
+curl -u couchpotato:secret -X POST 'localhost:8080/api/movies/watched/' -d 'A Few Good Men'
+----
+
+Watches a movie.
+The name must be unique.
+
+=== Implementations
+
+All services are implemented with Spring Boot and I would recommend having a look at them for basic Boot best practices, too.
+They all use https://github.com/michael-simons/neo4j-migrations[Neo4j Migrations] to create the basic Movie Graph, including a couple of constraints.
+
+All implementations provides metrics under http://localhost:8080/actuator/metrics, especially http://localhost:8080/actuator/metrics/neo4j.driver.connections.created[driver metrics].
+
+All implementations are resillient against killing the bolt connections they are using.
+
+To demonstrate this, they use a connection pool of size 1, which is *not* recommended in production *AT ALL*.
+
+==== driver_with_tx_function
+
+Based on the pure driver, not using any Spring Transaction integration. 
+Uses managed transactional functions which the driver provides.
+
+Build and run as follows:
+
+[source,console]
+----
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--org.neo4j.driver.uri=neo4j://YOUR_DATABASE:7687 --org.neo4j.driver.authentication.password=YOURPASSWORD"
+----
+
+==== sdn_ogm
+
+Uses Neo4j-OGM and SDN over a Bolt connection.
+Neo4j-OGM cannot utilize the Drivers builtin retry mechanism as it works together with Springs transaction manager already.
+Therefor we need to do our retries on our own.
+To make our life simple, https://resilience4j.readme.io[resilience4j] is used.
+
+This implementation comes in two flavors: One using Neo4j-OGM without repository abstraction and one with.
+Both can work with the same retry mechanism.
+
+Build and run with "pure" Neo4j-OGM:
+
+[source,console]
+----
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--org.neo4j.driver.uri=neo4j://YOUR_DATABASE:7687 --org.neo4j.driver.authentication.password=YOURPASSWORD"
+----
+
+To run the version using Spring Data Neo4j repositories
+
+[source,console]
+----
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=use-sdn --org.neo4j.driver.uri=neo4j://YOUR_DATABASE:7687 --org.neo4j.driver.authentication.password=YOURPASSWORD"
+----
+
+This service also provides metrics about retries:
+
+* `curl "http://localhost:8080/actuator/metrics/resilience4j.retry.calls"`
+* `curl "http://localhost:8080/actuator/metrics/resilience4j.retry.calls?tag=kind:successful_without_retry"`
+* `curl "http://localhost:8080/actuator/metrics/resilience4j.retry.calls?tag=kind:successful_with_retry"`
+
+==== sdn6
+
+This represents the upcoming Spring Data Neo4j version, SDN 6, previously dubbed SDN 6.
+It runs here in a Spring Boot 2.4 Milestone.
+
+It offers two modes: Using only the template as well as the repository abstraction.
+
+NOTE: Have a look at the changed configuration properties.
+
+[source,console]
+----
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.neo4j.uri=neo4j://YOUR_DATABASE:7687 --spring.neo4j.authentication.password=YOURPASSWORD"
+----
+
+To run the version using Spring Data Neo4j repositories
+
+[source,console]
+----
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=use-sdn --spring.neo4j.uri=neo4j://YOUR_DATABASE:7687 --spring.neo4j.authentication.password=YOURPASSWORD"
+----
+
+This service also provides metrics about retries:
+
+* `curl "http://localhost:8080/actuator/metrics/resilience4j.retry.calls"`
+* `curl "http://localhost:8080/actuator/metrics/resilience4j.retry.calls?tag=kind:successful_without_retry"`
+* `curl "http://localhost:8080/actuator/metrics/resilience4j.retry.calls?tag=kind:successful_with_retry"`
