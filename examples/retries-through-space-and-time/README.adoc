@@ -66,6 +66,10 @@ All implementations are resillient against killing the bolt connections they are
 
 To demonstrate this, they use a connection pool of size 1, which is *not* recommended in production *AT ALL*.
 
+WARNING: The implementation found in the respective `MovieService` classes is bad *on purpose*.
+         I know how to write those queries in an atomic way so that the chances of them failing are much lower.
+         That would however defeat the purpose of those services actually failing: Those stuff should fail in between so that it is retried.
+
 ==== driver_with_tx_function
 
 Based on the pure driver, not using any Spring Transaction integration. 
