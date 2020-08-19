@@ -1,0 +1,655 @@
+= Try. And then retry. There can be failure.
+Michael Simons <michael.simons@neo4j.com>
+:doctype: article
+:lang: en
+:listing-caption: Listing
+:source-highlighter: coderay
+:icons: font
+:sectlink: true
+:sectanchors: true
+:numbered: true
+:xrefstyle: short
+
+[abstract]
+--
+With persistent connections between things, the exceptional case should be expected and not considered to be a suprise.
+There are dozends of reasons why a connection maybe closed or be rendered unusable.
+In such scenarios precautions must be taken so that your logic succeeds eventually.
+--
+
+== Introduction
+
+=== General considerations
+
+Most database management systems (DBMS) these days provides client libraries aka drivers that provide stateful connections to the DBMS.
+Establishing such connections includes among other things acquiring a transport link, a network session on both the client and the server and of course, user authentication.
+These days connections are usually encrypted - or at least they should be - so the whole TLS ceremony, including certificate verification comes before that.
+All that makes connections expensive.
+Therefor once created, they are kept intact as long as it's reasonable.
+
+Having established and verified a connection once gives no guarantee that this connection will life for all time.
+There are plenty of reasons that connection can become useless:
+
+* The physical connection fails
+* The server goes away
+* Parts of the server being in use go away (i.e. the members of a cluster)
+* The server figures that the connection has not been used and terminates it
+
+In the Java world https://en.wikipedia.org/wiki/Java_Database_Connectivity[JDBC] is an established standard for connecting to relational databases.
+JDBC connections are seldomly handled in isolation from within an application but most often through https://en.wikipedia.org/wiki/Connection_pool[connection pools].
+In connection pooling, after a connection is created, it is placed in the pool and it is used again so that a new connection does not have to be established. If all the connections are being used, a new connection is made and is added to the pool.
+Connection pools can also be configured to verify or test connections before they handle out a lease.
+
+Depending on the pool, this might or might not safe you from the pain when a connection went away.
+The pool can create a new one, hand it out and you're good to go.
+
+This is all fine when you execute things on the connection that finish in small amounts of time or at least way before a connection may fail.
+It won't help you with longer running transactions, involving multiple calls on a connection.
+The first calls may succeed, the next one fails.
+A pool cannot not do anything here, when it handed out the connection, it worked.
+
+*To sum this up*: Stateful connections are costly to acquire and there are many good reasons to keep them around.
+Connection failures however are not something extraordinary, they happen.
+As a developer you have to create your application in such a way that it is able to mitigate connection failures.
+There are various tools that help you with the basic connection management in pools.
+When things fail in mid flight, it is up to you to decide whether you want to fail hard or retry a transaction.
+
+=== Neo4j
+
+==== Why is this topic important?
+
+Neo4j can be run as a database cluster, not only make it very scalable but also very resilient against the occasional loss of a server or changes in infrastructure.
+Clients are usually routed to one of the members of a cluster that fulfills the needs of that client (either read only operations or read and write operations).
+If the member to which the client is connected goes away, the cluster itself takes care of finding a new quorum on the state of things, but the client needs to handle the exceptional state:
+A stateful connection that has become stale.
+
+That becomes even more relevant in big cloud deployments of the Neo4j database, such as https://console.neo4j.io[Neo4j Aura],
+in which the members of a cluster are rotated quite often.
+
+==== The Neo4j driver
+
+_I am writing this post from a Java perspective, thus I mainly focus on the https://github.com/neo4j/neo4j-java-driver[Neo4j Java driver], but the core aspects apply for each supported driver._
+
+The Neo4j driver objects do connection pooling for you.
+You point them to a server or a cluster and they create an internal connection pool for you.
+With `.session()` (or `.asyncSession()` respectively `.rxSession()`) on the driver object, a session with an underlying connection will be acquired and handed to you.
+
+If there are no more connections in the pool or if the connections are closed, a new one is created.
+
+Work in that sessions happens inside transactions.
+All the time.
+
+Transactions are atomic units of work containing one or more Cypher Queries.
+Transactions may contain read or write work, and will generally be routed to an appropriate server for execution, where they will be carried out in their entirety.
+In case of a transaction failure, the transaction needs to be retried from the beginning.
+
+The driver offers two modes in which the transaction management is done for you and one mode where you are responsible.
+
+You'll find the following information in the drivers manual https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-transactions[under "Transactions"].
+
+==== Automatic commits
+
+This is simplest form: You run one query directly on the session.
+Opening a transaction before and commiting it afterwards it's done for you.
+This is probably also the most shortlived form of a transaction, depending only on how long your single query takes to run.
+
+Either way: Not only is the transaction managed for you but also making sure the session and it's underlying physical connection is usuable is done for you.
+This all happens in one go.
+The query will however not be retried if the connection breaks done during execution.
+
+==== Transactional functions
+
+All the drivers provide an API that takes in a unit of work, defined in the corresponding language.
+In the Java world that is a functional interface called `TransactionWork<T>` with a single method called `T execute(Transaction tx)`.
+`T` represents a type parameter (the type of the object returned by the unit of work) and the one and only parameter is the ongoing transaction.
+
+Those functions can be passed around inside the driver and they can be retried when things fail during execution.
+Failure can happen as described before (the acquisition of the physical connection fails) or inflight (connection is lost).
+
+To allow the driver to safely execute those functions multiple times, they are some hard requirements:
+The functions must be idempotent and are not allowed to return an unconsumed result set from any ongoing query.
+Idempotency should be an obvious requirement: The function may be applied multiple times until success and it shouldn't have a different outcome on the second run than at first try.
+The second requirement may not be that obvious.
+The function will use the passed `Transaction` object to execute queries.
+The result of those queries is tied to that transaction.
+The transaction will be closed after the function ran, in both failure and success states.
+At that very moment, the behaviour of the result will become undetermined, as it is tied to the transaction.
+If the method returns anything from it, than it must be mapped into a stable object before the end of the functions.
+
+==== Unmanaged transaction
+
+Unmanaged transactions work by opening a session (which will ensure that at this very moment a working connection can be established),
+and than explicitly opening up a transaction with `beginTransaction()`, working on it and commiting as see fit.
+
+This is the way many higher level abstraction will use the driver.
+Such abstractions - like Spring Data Neo4j - use transactions managed by the application itself and translate them into database transactions accordingly.
+https://twitter.com/mp911de[Mark Paluch] and I spoke at Devoxx 2019 about those topics, find our https://www.youtube.com/watch?v=8TkY_RaoLCQ[reactive transaction master class here].
+
+Unmanaged transactions provide freedom of interaction with the database transactions as necessary - for example keeping it open as long as a large result set is streamed and processed further - but delegate the responsiblity in case of failures back to the client.
+
+== Examples
+
+The following examples are all Java based and use Spring Boot as an application runtime.
+The reason for that: I work in the team that is responsible for our Spring integration and in the end, I can write idiomatic Java much better than say idiomatic Python or Go.
+The main ideas should be portable.
+
+The examples all work in the Neo4j movie graph. For your convenience I have added the https://github.com/michael-simons/neo4j-migrations[Neo4j migrations] to the setup of each project.
+It creates the dataset for you.
+
+Each of the different services offer a read REST service under `http://localhost:8080/api/movies`, giving you a list of movies.
+A second endpoint, `http://localhost:8080/api/movies/watched/` takes a movie title and "watches" it. This endpoint requires authentication as `couchpotato` with password secret.
+
+All three example services use the same `MovieController` to orchestrate a `MovieService` looking like this
+
+[source,java]
+----
+public interface MovieService {
+
+	Collection<Movie> getAllMovies();
+
+	Integer watchMovie(String userName, String title);
+}
+----
+
+The implementations of the movie service, especially `watchMovie` is bloated and complicated *on purpose*.
+The general flow is first getting the movie, than getting the person that is authenticated and than updating the number of times the movie is watched.
+I know how to write this in one query, but the idea is to have a slight window of time in which I can kill the connection or introduce arbitrary failure.
+
+All the following examples are available on Github:
+https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/retries-through-space-and-time[Neo4j Java Driver rety examples].
+
+=== Shared configuration
+
+The examples share the following configuration
+
+[source,java]
+----
+Config.builder()
+		.withMaxConnectionLifetime(5, TimeUnit.MINUTES)
+		.withMaxConnectionPoolSize(1)
+		.withLeakedSessionsLogging();
+----
+
+or expressed as properties in Spring Boot 2.3 with our https://github.com/neo4j/neo4j-java-driver-spring-boot-starter[starter] on the classpath
+
+[source,properties]
+----
+org.neo4j.driver.pool.max-connection-lifetime=5m
+org.neo4j.driver.pool.metrics-enabled=true
+org.neo4j.driver.pool.log-leaked-sessions=true
+org.neo4j.driver.pool.max-connection-pool-size=1
+----
+
+or with Spring Boot 2.4 upwards as
+
+[source,properties]
+----
+spring.neo4j.pool.max-connection-lifetime=5m
+spring.neo4j.pool.metrics-enabled=true
+spring.neo4j.pool.log-leaked-sessions=true
+spring.neo4j.pool.max-connection-pool-size=1
+----
+
+This is *NOT* a configuration I recommend in any form in production.
+Especially the pool size effectivley disables the pool, but allows for easy testing our retries via Neo4j's `dbms.listConnections() and `dbms.killConnection()` functions.
+
+
+=== Application using the Java driver
+
+This describes the application named https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/retries-through-space-and-time/driver_with_tx_function[driver_with_tx_function] in the GitHub repository.
+It depends on `spring-boot-starter-web`, `spring-boot-starter-security` and `neo4j-java-driver-spring-boot-starter` which gives you the Neo4j Java driver.
+
+Given the service holds an instance of `org.neo4j.driver.Driver` like this:
+
+[source,java]
+----
+@Service
+public class MovieService {
+
+	private static final Log log = LogFactory.getLog(MovieService.class);
+
+	private final Driver driver;
+
+	MovieService(Driver driver) {
+		this.driver = driver;
+	}
+}
+----
+
+the function reading all the movies can be implemented like this:
+
+[source,java]
+----
+public Collection<Movie> getAllMovies() {
+
+    TransactionWork<List<Movie>> readAllMovies = tx -> { // <.>
+        Function<Record, Movie> recordToMovie =
+            r -> new Movie(r.get("m").get("title").asString()); // <.>
+
+        return tx.run("MATCH (m:Movie) RETURN m ORDER BY m.title ASC")
+            .list(recordToMovie); // <.>
+	};
+
+    try (Session session = driver.session()) {
+        return session.readTransaction(readAllMovies); // <.>
+    }
+}
+----
+<.> This is a transactional function, a unit of work
+<.> A mapping function, extracted for readability
+<.> The only interaction with the database
+<.> The actual moment the unit of work is passed to the driver
+
+The whole unit of work is basically atomic. It doesn't modify state, so it is safe to retry.
+The result set is consumed before the unit of work is left (via `list`).
+When passed to `readTransaction` the driver tries to execute it for a maximum of 30s by default.
+
+The ceremony looks very similar in terms of a write scenario:
+
+[source,java]
+----
+public Integer watchMovie(String userName, String title) {
+
+    TransactionWork<Integer> watchMovie = tx -> { // <.>
+
+        var userId = tx.run( // <.>
+                "MERGE (u:Person {name: $name}) RETURN id(u)", Map.of("name", userName)
+            ).single().get(0).asLong();
+
+        var movieId = tx.run(
+                "MERGE (m:Movie {title: $title}) RETURN id(m)", Map.of("title", title)
+        ).single().get(0).asLong();
+
+        InsertRandom.delay(); // <.>
+
+        var args = Map.of("movieId", movieId, "userId", userId);
+        return tx.run(""
+            + "MATCH (m:Movie), (u:Person)\n"
+            + "WHERE id(m) = $movieId AND id(u) = $userId WITH m, u\n"
+            + "MERGE (u) - [w:WATCHED] -> (m)\n"
+            + "SET w.number_of_times = COALESCE(w.number_of_times,0)+1\n"
+            + "RETURN w.number_of_times AS number_of_times", args)
+            .single().get("number_of_times").asInt();
+        };
+
+        try (Session session = driver.session()) {
+            return session.writeTransaction(watchMovie); // <.>
+        }
+}
+----
+<.> The unit of work
+<.> Split onto multiple queries to have some window for disaster
+<.> With some random delay added as well
+<.> The actual call, this time in a `writeTransaction`
+
+All the merges in those queries will be commited or none at all.
+Care must be taken not calling a stored procedure that does internal commits or using a statement with `PERIODIC COMMIT`.
+
+The execution of the `watchMovie` unit of work will be retried for 30 seconds by default.
+
+Now let's look at Spring's `@Transactional`, Object-Database-Mapper like https://neo4j.com/docs/ogm-manual/current/[Neo4j-OGM] and value adding https://spring.io/projects/spring-data-neo4j[Spring Data Neo4j].
+
+=== Application using Neo4j-OGM and Spring Data inside Spring transactions
+
+The following is about https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/retries-through-space-and-time/sdn_ogm[sdn_ogm].
+
+Spring offers a declarative way to define transactional boundaries in the service layer of an application via the `@Transactional` annotation.
+This depends of course on Spring's `TransactionManager`.
+In Springs case this `TransactionManager` is responsible for the scope and propagation of a transaction and also on which type of exceptions things should be rolled back.
+
+Springs transaction manager has no builtin understanding of retries.
+
+In addition to `@Transactional`, Spring transactions can also be used with the `TransactionTemplate`, but the above restrictions stay valid.
+
+Assume an OGM based service like this
+
+[source,java]
+----
+@Service
+public class MovieServiceBasedOnPureOGM implements MovieService {
+
+	private final org.neo4j.ogm.session.Session session;
+
+	public MovieServiceBasedOnPureOGM(Session session) {
+		this.session = session;
+	}
+}
+----
+
+The `session` is not a Driver, but an OGM session!
+
+Looking at the read method above implemented with OGM we find
+
+[source,java]
+----
+@Transactional(readOnly = true)
+public Collection<Movie> getAllMovies() {
+
+    return session.loadAll(Movie.class);
+}
+----
+
+There's no way to use the drivers builtin retries.
+The same is true for the write case. Again, please note that this is of course implemented badly to test out retries:
+
+[source,java]
+----
+@Transactional
+public Integer watchMovie(String userName, String title) {
+
+    var user = Optional.ofNullable(
+            session.queryForObject(
+                User.class,
+                "MATCH (u:Person) -[w:WATCHED] -> (m:Movie) WHERE u.name = $name RETURN u, w, m",
+                Map.of("name", userName)
+            )).orElseGet(() -> new User(userName));
+
+    var movie = Optional.ofNullable(
+            sessiom.queryForObject(
+                Movie.class,
+                "MATCH (m:Movie) WHERE m.title = $title RETURN m",
+                Map.of("title", title))
+            ).orElseGet(() -> new Movie(title));
+
+    InsertRandom.delay();
+
+    int numberOfTimes = user.watch(movie);
+    session.save(user);
+    return numberOfTimes;
+}
+----
+
+`getAllMovies` and `watchMovie` now defines our transactional units of work, as the lambdas in the previous section did before.
+
+To avoid defining custom queries completly, we can swap the interaction with the session with Spring Data reposiories like that:
+
+[source,java]
+----
+@Service
+public class MovieServiceBasedOnSDN implements MovieService {
+
+    interface MovieRepository extends Neo4jRepository<Movie, Long> {
+
+        Optional<Movie> findOneByTitle(String title);
+    }
+
+    interface UserRepository extends Neo4jRepository<User, Long> {
+
+        Optional<User> findOneByName(String name);
+    }
+
+    private final MovieRepository movieRepository;
+
+    private final UserRepository userRepository;
+
+    public MovieServiceBasedOnSDN(MovieRepository movieRepository, UserRepository userRepository) {
+        this.movieRepository = movieRepository;
+        this.userRepository = userRepository;
+    }
+
+    @Override @Transactional(readOnly = true)
+    public Collection<Movie> getAllMovies() {
+
+        return (Collection<Movie>) movieRepository.findAll();
+    }
+
+    @Override @Transactional
+    public Integer watchMovie(String userName, String title) {
+
+        var user = userRepository.findOneByName(userName)
+            .orElseGet(() -> new User(userName));
+
+        var movie = movieRepository.findOneByTitle(title)
+            .orElseGet(() -> new Movie(title));
+
+        InsertRandom.delay();
+
+        int numberOfTimes = user.watch(movie);
+        userRepository.save(user);
+        return numberOfTimes;
+    }
+}
+----
+
+The transactional units of work stay the same and it reads better but there's still no way we can facilitate the drivers builtin retry mechanism.
+
+As explained earlier: Expect those things to fail!
+With the code in place, you can do this on the calling side like this:
+
+[source,java]
+----
+@PostMapping("/watched")
+public Integer watched(Principal principal, @RequestBody String title) {
+
+    try {
+        return this.movieService.watchMovie(principal.getName(), title);
+    } catch(Exception e) {
+        throw new ResponseStatusException(HttpStatus.I_AM_A_TEAPOT);
+    }
+}
+----
+
+Or do retries on your own in the catch block.
+Regardless of what you do: It is the applications responsibility to handle these errors!
+
+One way of doing this is a library named https://resilience4j.readme.io[Resilience4j].
+Resilience4j is a lightweight fault tolerance library inspired by Netflix Hystrix, but designed for functional programming.
+
+The library offers not only retries, but also https://en.wikipedia.org/wiki/Circuit_breaker[circuit breakers], bulkheads and more.
+In generally, it offers several ways to make your application more resillient against inevitable exceptional states.
+
+The easiest way add Resilience4j to your Spring project is via a starter: `io.github.resilience4j:resilience4j-spring-boot2:1.5.0`.
+In addition, you have to add `org.springframework.boot:spring-boot-starter-aop` to enable the declarative usage via `@Retry`
+
+Those dependencies gives you property support to configure Resilience4j and provides all beans necessary in the Spring context.
+
+Resilience4j can be configured programmatically but we are gonna use the provided configuration properties:
+
+[source,properties]
+----
+# This is represents the default config
+resilience4j.retry.configs.default.max-retry-attempts=10
+resilience4j.retry.configs.default.wait-duration=1s
+# Those are the same exceptions the driver itself would retry on
+resilience4j.retry.configs.default.retry-exceptions=\
+  org.neo4j.driver.exceptions.SessionExpiredException,\
+  org.neo4j.driver.exceptions.ServiceUnavailableException
+
+# Only to make log entries appear immediate
+resilience4j.retry.configs.default.event-consumer-buffer-size=1
+
+resilience4j.retry.instances.neo4j.base-config=default
+----
+
+This creates a retry object named `neo4j` which tries 10 attempts and waits for a second in between.
+It only retries on exceptions of the given type.
+
+An exponential backoff interval can be enabled by setting `resilience4j.retry.configs.default.enable-exponential-backoff=true`.
+
+How to use this?
+
+If you want to stick with the declarative way, all you have to do is annotate the service class as a whole or individual methods with `@Retry(name = "neo4j")` like this:
+
+[source,java]
+----
+import io.github.resilience4j.retry.annotation.Retry;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Retry(name = "neo4j")
+public class MovieServiceBasedOnPureOGM implements MovieService {
+
+	private final org.neo4j.ogm.session.Session session;
+
+	public MovieServiceBasedOnPureOGM(Session session) {
+		this.session = session;
+	}
+
+    @Transactional(readOnly = true)
+    public Collection<Movie> getAllMovies() {
+
+        // See above
+        return null;
+    }
+
+    @Transactional
+    public Integer watchMovie(String userName, String title) {
+		// See above
+        return null;
+    }
+}
+----
+
+And that's effectively all there is.
+
+If you prefer doing it in a programmatic way without using annotations, you can inject the registry of `Retry` objects into the calling side and run your transactional unit of work like this.
+
+[source,java]
+----
+import io.github.resilience4j.retry.RetryRegistry;
+
+import java.security.Principal;
+import java.util.Collection;
+
+import org.neo4j.tips.cluster.sdn_ogm.domain.Movie;
+import org.neo4j.tips.cluster.sdn_ogm.domain.MovieService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/movies")
+public class MovieController {
+
+    private final MovieService movieService;
+
+    private final RetryRegistry retryRegistry;
+
+    public MovieController(MovieService movieService, RetryRegistry retryRegistry) {
+        this.movieService = movieService;
+        this.retryRegistry = retryRegistry;
+    }
+
+    @GetMapping({ "", "/" })
+    public Collection<Movie> getMovies() {
+        return retryRegistry.retry("neo4j") // <.>
+            .executeSupplier(this.movieService::getAllMovies); // <.>
+    }
+
+    @PostMapping("/watched")
+    public Integer watched(Principal principal, @RequestBody String title) {
+
+        return retryRegistry.retry("neo4j")
+            .executeSupplier(() -> this.movieService.watchMovie(principal.getName(), title));
+    }
+}
+----
+<.> Get the configured retry
+<.> Chose one of the fitting methods and execute your service
+
+Please note that you *cannot* do this inside the service method annotated with `@Transactional`.
+If you would, you would get the boundaries exactly the wrong way: The retry would happen inside the transaction.
+You want to have the transaction retried.
+
+The Neo4j driver itself does retry on two additional cases: When it receceives a transient exception from the server with two well defined error codes.
+This is rather easy to replicate by a Java `Predicate`:
+
+[source,java]
+----
+public class RetryOGMSDNExceptionPredicate implements Predicate<Throwable> {
+
+    @Override
+    public boolean test(Throwable throwable) {
+
+        Throwable ex = throwable;
+        if (throwable instanceof CypherException) {
+            ex = throwable.getCause();
+        }
+
+        if (ex instanceof TransientException) {
+            String code = ((TransientException) ex).code();
+            return !"Neo.TransientError.Transaction.Terminated".equals(code) &&
+                !"Neo.TransientError.Transaction.LockClientStopped".equals(code);
+        } else {
+            return ex instanceof SessionExpiredException || ex instanceof ServiceUnavailableException;
+        }
+    }
+}
+----
+
+As OGM happens to wrap exceptions it catches into `CypherException` we can unwrap those as well.
+
+To add this predicate to your Resilience4j config, add this to your configuration:
+
+[source,java]
+----
+resilience4j.retry.configs.default.retry-exception-predicate=\
+  your.package.RetrySDN6ExceptionPredicate
+----
+
+Note: We're gonna add a prebuild predicate to OGM that you can use for your convinience.
+
+=== Application using Spring Data Neo4j 6 inside Spring transactions
+
+The upcoming version 2.4 of Spring Boot will contain a completly revamped Spring Data Neo4j without Neo4j-OGM but still containing all the mapping features.
+The same application using a milestone of SDN 6 (formelly known as SDN/RX) is available as https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/retries-through-space-and-time/sdn6[sdn6].
+
+The predicate looks a bit different, but all the rest applies.
+
+=== Running the examples
+
+The examples require Java 11.
+
+I have build a https://github.com/michael-simons/neo4j-sdn-ogm-tips/tree/master/examples/retries-through-space-and-time/client[simple client].
+Built and run it like this:
+
+[source,console]
+----
+./mvnw clean compile
+./mvnw exec:java -Dexec.mainClass="org.neo4j.tips.cluster.client.Application"
+----
+
+It will keep on calling `localhost:8080` and expects one of the services running.
+
+To run the pure driver based server or the SDN/OGM examples, use
+
+[source,console]
+----
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--org.neo4j.driver.uri=neo4j://YOUR_DATABASE:7687 --org.neo4j.driver.authentication.password=YOURPASSWORD"
+----
+
+To run the SDN 6 example, the properties are a bit different
+
+[source,console]
+----
+./mvnw spring-boot:run -Dspring-boot.run.arguments="--spring.neo4j.uri=neo4j://YOUR_DATABASE:7687 --spring.neo4j.authentication.password=YOURPASSWORD"
+----
+
+To make the the SDN/OGM respectively the SDN 6 example use the repository abstraction, add `--spring.profiles.active=use-sdn` to the run arguments.
+
+All applications provide metrics for the driver (how many connections have been created) under http://localhost:8080/actuator/metrics/neo4j.driver.connections.created.
+
+The SDN/OGM and the SDN 6 application that use Resilience4j provide additional metrics about retries, such as:
+
+* http://localhost:8080/actuator/metrics/resilience4j.retry.calls
+* http://localhost:8080/actuator/metrics/resilience4j.retry.calls?tag=kind:successful_without_retry
+* http://localhost:8080/actuator/metrics/resilience4j.retry.calls?tag=kind:successful_with_retry
+
+== Summary
+
+The Neo4j Java Driver and libraries such as Neo4j-OGM and Spring Data Neo4j works just fine against Neo4j clusters and cloud solutions like Aura.
+All three transaction modes (auto commit, managed and unmanaged transactions) can be used.
+A library using unmanaged transactions just works perfectly normal.
+
+However, applications must plan and prepare for connection failures - regardless whether the database is deployed standalone or as a cluster.
+This is normal.
+Connection failures can be mitigated by using built-in retry mechanisms of our drivers or using external solutions.
+
+In the Java world, you have to options to deal with this for Neo4j: Using the builtin offering or a tool like Resilience4j.
+Resilience4j allows shaping those retries in a very fine grained way.
+We haven discussed what happens at the nth retry: Either the thing fails completly or an alternative is called.
+Such a last resort would keep services available for the users with retries enabled later on.
