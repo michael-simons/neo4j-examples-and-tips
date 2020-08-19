@@ -87,7 +87,7 @@ The driver offers two modes in which the transaction management is done for you 
 
 You'll find the following information in the drivers manual https://neo4j.com/docs/driver-manual/current/cypher-workflow/#driver-transactions[under "Transactions"].
 
-==== Automatic commits
+===== Automatic commits
 
 This is simplest form: You run one query directly on the session.
 Opening a transaction before and commiting it afterwards it's done for you.
@@ -97,7 +97,7 @@ Either way: Not only is the transaction managed for you but also making sure the
 This all happens in one go.
 The query will however not be retried if the connection breaks done during execution.
 
-==== Transactional functions
+===== Transactional functions
 
 All the drivers provide an API that takes in a unit of work, defined in the corresponding language.
 In the Java world that is a functional interface called `TransactionWork<T>` with a single method called `T execute(Transaction tx)`.
@@ -116,7 +116,7 @@ The transaction will be closed after the function ran, in both failure and succe
 At that very moment, the behaviour of the result will become undetermined, as it is tied to the transaction.
 If the method returns anything from it, than it must be mapped into a stable object before the end of the functions.
 
-==== Unmanaged transaction
+===== Unmanaged transaction
 
 Unmanaged transactions work by opening a session (which will ensure that at this very moment a working connection can be established),
 and than explicitly opening up a transaction with `beginTransaction()`, working on it and commiting as see fit.
