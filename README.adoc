@@ -1,6 +1,6 @@
-= neo4j-sdn-ogm-tips
+= Neo4j Examples around SDN, SDN with OGM and general driver usage.
 
-A curated list of Neo4j SDN and OGM tips.
+A somewhat curated list of Neo4j examples and tips, mostly around SDN with OGM (SDN 5.x), SDN 6 (previously SDN/RX) and testing.
 
 * https://michael-simons.github.io/neo4j-sdn-ogm-tips/ogm_sdn_knowledge_base.html[OGM and SDN knowledge base]
 * https://michael-simons.github.io/neo4j-sdn-ogm-tips/understand_the_type_system.html[Understand the Neo4j Cypher and OGM type system]
