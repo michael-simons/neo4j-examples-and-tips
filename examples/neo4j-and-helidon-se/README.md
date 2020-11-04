@@ -1,13 +1,13 @@
-# Helidon Quickstart MP
+# Helidon Quickstart SE
 
-Sample Helidon MP project that includes multiple REST operations.
+Sample Helidon SE project that includes multiple REST operations.
 
 ## Build and run
 
 Bring up a Neo4j instance via Docker
 
 ```bash
-docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/secret'  neo4j:4.0.3 // <.>
+docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/secret'  neo4j:4.0
 ```
 ----
 
@@ -16,7 +16,7 @@ Goto the Neo4j browser and play the first step of the movies graph: [`:play movi
 Build and run with With JDK11+
 ```bash
 mvn package
-java -jar target/helidon-quickstart-mp.jar
+java -jar target/helidon-quickstart-se.jar
 ```
 
 Then access the rest API like this:
@@ -62,13 +62,13 @@ curl -H 'Accept: application/json' -X GET http://localhost:8080/metrics
 ## Build the Docker Image
 
 ```
-docker build -t helidon-quickstart-mp .
+docker build -t helidon-quickstart-se .
 ```
 
 ## Start the application with Docker
 
 ```
-docker run --rm -p 8080:8080 helidon-quickstart-mp:latest
+docker run --rm -p 8080:8080 helidon-quickstart-se:latest
 ```
 
 Exercise the application as described above
@@ -76,11 +76,11 @@ Exercise the application as described above
 ## Deploy the application to Kubernetes
 
 ```
-kubectl cluster-info                         # Verify which cluster
-kubectl get pods                             # Verify connectivity to cluster
-kubectl create -f app.yaml                   # Deploy application
-kubectl get pods                             # Wait for quickstart pod to be RUNNING
-kubectl get service helidon-quickstart-mp    # Verify deployed service
+kubectl cluster-info                        # Verify which cluster
+kubectl get pods                            # Verify connectivity to cluster
+kubectl create -f app.yaml                  # Deploy application
+kubectl get pods                            # Wait for quickstart pod to be RUNNING
+kubectl get service helidon-quickstart-se   # Get service info
 ```
 
 Note the PORTs. You can now exercise the application as you did before but use the second
@@ -104,8 +104,8 @@ You can build a native executable in 2 different ways:
 
 ### Local build
 
-Download Graal VM at https://www.graalvm.org/downloads, the version
- currently supported for Helidon is `20.1.0`.
+Download Graal VM at https://www.graalvm.org/downloads, the versions
+ currently supported for Helidon are `20.1.0` and above.
 
 ```
 # Setup the environment
@@ -123,7 +123,7 @@ See https://github.com/oracle/helidon-build-tools/tree/master/helidon-maven-plug
 Start the application:
 
 ```
-./target/helidon-quickstart-mp
+./target/helidon-quickstart-se
 ```
 
 ### Multi-stage Docker build
@@ -131,15 +131,14 @@ Start the application:
 Build the "native" Docker Image
 
 ```
-docker build -t helidon-quickstart-mp-native -f Dockerfile.native .
+docker build -t helidon-quickstart-se-native -f Dockerfile.native .
 ```
 
 Start the application:
 
 ```
-docker run --rm -p 8080:8080 helidon-quickstart-mp-native:latest
+docker run --rm -p 8080:8080 helidon-quickstart-se-native:latest
 ```
-
 
 ## Build a Java Runtime Image using jlink
 
@@ -167,7 +166,7 @@ See https://github.com/oracle/helidon-build-tools/tree/master/helidon-maven-plug
 Start the application:
 
 ```
-./target/helidon-quickstart-mp/bin/start
+./target/helidon-quickstart-se/bin/start
 ```
 
 ### Multi-stage Docker build
@@ -175,17 +174,17 @@ Start the application:
 Build the "jlink" Docker Image
 
 ```
-docker build -t helidon-quickstart-mp-jlink -f Dockerfile.jlink .
+docker build -t helidon-quickstart-se-jlink -f Dockerfile.jlink .
 ```
 
 Start the application:
 
 ```
-docker run --rm -p 8080:8080 helidon-quickstart-mp-jlink:latest
+docker run --rm -p 8080:8080 helidon-quickstart-se-jlink:latest
 ```
 
 See the start script help:
 
 ```
-docker run --rm helidon-quickstart-mp-jlink:latest --help
+docker run --rm helidon-quickstart-se-jlink:latest --help
 ```

@@ -35,7 +35,7 @@ class MainTest {
 		server = Server.create().start();
 		serverUrl = "http://localhost:" + server.port();
 
-		neo4jContainer = new Neo4jContainer<>()
+		neo4jContainer = new Neo4jContainer<>("neo4j:4.0")
 			.withAdminPassword("secret");
 		neo4jContainer.start();
 
