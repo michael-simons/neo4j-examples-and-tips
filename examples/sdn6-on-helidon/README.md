@@ -7,9 +7,8 @@ Sample Helidon MP project that includes multiple REST operations.
 Bring up a Neo4j instance via Docker
 
 ```bash
-docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/secret'  neo4j:4.0.3 // <.>
+docker run --publish=7474:7474 --publish=7687:7687 -e 'NEO4J_AUTH=neo4j/secret'  neo4j:4.0
 ```
-----
 
 Goto the Neo4j browser and play the first step of the movies graph: [`:play movies`](http://localhost:7474/browser/?cmd=play&arg=movies).
 
