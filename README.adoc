@@ -2,10 +2,10 @@
 
 A somewhat curated list of Neo4j examples and tips, mostly around SDN with OGM (SDN 5.x), SDN 6 (previously SDN/RX) and testing.
 
-* https://michael-simons.github.io/neo4j-sdn-ogm-tips/ogm_sdn_knowledge_base.html[OGM and SDN knowledge base]
-* https://michael-simons.github.io/neo4j-sdn-ogm-tips/understand_the_type_system.html[Understand the Neo4j Cypher and OGM type system]
-* https://michael-simons.github.io/neo4j-sdn-ogm-tips/using_multiple_session_factories.html[Use multiple, different connections to Neo4j instances in a Spring Boot application]
-* https://michael-simons.github.io/neo4j-sdn-ogm-tips/use_dynamic_finder.html[Create SDN repositories that find nodes by arbitrary properties]
-* https://michael-simons.github.io/neo4j-sdn-ogm-tips/what_are_the_building_blocks_of_sdn_and_ogm.html[What are the building blocks of SDN and OGM?]
-* https://michael-simons.github.io/neo4j-sdn-ogm-tips/validate_transaction_settings.html[Validate your Neo4j transaction settings]
-* https://michael-simons.github.io/neo4j-sdn-ogm-tips/sdn_and_causal_cluster.html[Use causal cluster support]
+* https://michael-simons.github.io/neo4j-examples-and-tips/ogm_sdn_knowledge_base.html[OGM and SDN knowledge base]
+* https://michael-simons.github.io/neo4j-examples-and-tips/understand_the_type_system.html[Understand the Neo4j Cypher and OGM type system]
+* https://michael-simons.github.io/neo4j-examples-and-tips/using_multiple_session_factories.html[Use multiple, different connections to Neo4j instances in a Spring Boot application]
+* https://michael-simons.github.io/neo4j-examples-and-tips/use_dynamic_finder.html[Create SDN repositories that find nodes by arbitrary properties]
+* https://michael-simons.github.io/neo4j-examples-and-tips/what_are_the_building_blocks_of_sdn_and_ogm.html[What are the building blocks of SDN and OGM?]
+* https://michael-simons.github.io/neo4j-examples-and-tips/validate_transaction_settings.html[Validate your Neo4j transaction settings]
+* https://michael-simons.github.io/neo4j-examples-and-tips/sdn_and_causal_cluster.html[Use causal cluster support]
