@@ -18,11 +18,13 @@ import javax.json.bind.JsonbBuilder;
  * Unrelated to Neo4j, streaming JSONB is not yet supported in Helidon.
  * See https://github.com/oracle/helidon/issues/1794
  */
-public final class MovieBodyStreamWriter implements MessageBodyStreamWriter<Movie> {
+public final class SseJsonObjectBodyStreamWriter implements MessageBodyStreamWriter<Object> {
 
-	private static final MediaType APPLICATION_X_NDJSON = MediaType.create("application", "x-ndjson");
+	private static final MediaType APPLICATION_X_NDJSON = MediaType
+		.parse("text/event-stream;element-type=\"application/json\"");
 	private static final Jsonb JSON_FACTORY = JsonbBuilder.create();
-	private static final byte[] NL = "\n".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] DATA = "data: ".getBytes(StandardCharsets.UTF_8);
+	private static final byte[] NL = "\n\n".getBytes(StandardCharsets.UTF_8);
 
 	@Override
 	public PredicateResult accept(GenericType<?> type, MessageBodyWriterContext context) {
@@ -30,12 +32,13 @@ public final class MovieBodyStreamWriter implements MessageBodyStreamWriter<Movi
 	}
 
 	@Override
-	public Flow.Publisher<DataChunk> write(Flow.Publisher<? extends Movie> publisher,
-		GenericType<? extends Movie> type, MessageBodyWriterContext context) {
+	public Flow.Publisher<DataChunk> write(Flow.Publisher<? extends Object> publisher,
+		GenericType<? extends Object> type, MessageBodyWriterContext context) {
 
 		context.contentType(APPLICATION_X_NDJSON);
 		return Multi.defer(() -> publisher)
 			.flatMap(m -> Multi.just(
+				DataChunk.create(DATA),
 				DataChunk.create(JSON_FACTORY.toJson(m).getBytes(StandardCharsets.UTF_8)),
 				DataChunk.create(NL))
 			);

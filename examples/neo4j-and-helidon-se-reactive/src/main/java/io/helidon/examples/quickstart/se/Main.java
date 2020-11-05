@@ -11,7 +11,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 
 import io.helidon.config.Config;
-import io.helidon.examples.quickstart.se.api.MovieBodyStreamWriter;
+import io.helidon.examples.quickstart.se.api.SseJsonObjectBodyStreamWriter;
 import io.helidon.examples.quickstart.se.api.MovieService;
 import io.helidon.examples.quickstart.se.domain.MovieRepository;
 import io.helidon.health.HealthSupport;
@@ -59,7 +59,7 @@ public final class Main {
                 .config(config.get("server"))
                 .addMediaSupport(JsonpSupport.create())
                 .addMediaSupport(JsonbSupport.create())
-                .addStreamWriter(new MovieBodyStreamWriter())
+                .addStreamWriter(new SseJsonObjectBodyStreamWriter())
                 .build();
 
         // Try to start the server. If successful, print some info and arrange to
