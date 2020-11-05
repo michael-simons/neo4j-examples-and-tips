@@ -1,0 +1,15 @@
+
+app:
+  greeting: "Hello"
+
+server:
+  port: 8080
+  host: 0.0.0.0
+
+
+neo4j:
+  driver:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: secret
