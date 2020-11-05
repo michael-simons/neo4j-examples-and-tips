@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "name" : "io.helidon.examples.quickstart.se.domain.Actor",
+    "allPublicConstructors" : true,
+    "allPublicMethods" : true
+  },
+  {
+    "name" : "io.helidon.examples.quickstart.se.domain.Movie",
+    "allPublicConstructors" : true,
+    "allPublicMethods" : true
+  },
+  {
+    "name" : "io.helidon.examples.quickstart.se.domain.Person",
+    "allPublicConstructors" : true,
+    "allPublicMethods" : true
+  }
+]
