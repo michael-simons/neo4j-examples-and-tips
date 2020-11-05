@@ -15,6 +15,7 @@ import io.helidon.examples.quickstart.se.api.MovieService;
 import io.helidon.examples.quickstart.se.domain.MovieRepository;
 import io.helidon.health.HealthSupport;
 import io.helidon.health.checks.HealthChecks;
+import io.helidon.media.jsonb.JsonbSupport;
 import io.helidon.media.jsonp.JsonpSupport;
 import io.helidon.metrics.MetricsSupport;
 import io.helidon.webserver.Routing;
@@ -56,6 +57,7 @@ public final class Main {
         WebServer server = WebServer.builder(createRouting(config))
                 .config(config.get("server"))
                 .addMediaSupport(JsonpSupport.create())
+                .addMediaSupport(JsonbSupport.create())
                 .build();
 
         // Try to start the server. If successful, print some info and arrange to
