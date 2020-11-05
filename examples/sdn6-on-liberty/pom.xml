@@ -21,7 +21,7 @@
 		<failOnMissingWebXml>false</failOnMissingWebXml>
 
 		<!-- Spring Data and Neo4j -->
-		<spring-data-bom.version>2020.0.0-SNAPSHOT</spring-data-bom.version>
+		<spring-data-bom.version>2020.0.0</spring-data-bom.version>
 
 		<javax.servlet-api.version>4.0.1</javax.servlet-api.version>
 		<cdi-api.version>2.0</cdi-api.version>

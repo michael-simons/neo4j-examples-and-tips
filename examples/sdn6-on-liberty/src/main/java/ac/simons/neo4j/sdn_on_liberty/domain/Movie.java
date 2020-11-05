@@ -1,48 +1,65 @@
 package ac.simons.neo4j.sdn_on_liberty.domain;
 
-import static org.springframework.data.neo4j.core.schema.Relationship.Direction.INCOMING;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Property;
 import org.springframework.data.neo4j.core.schema.Relationship;
+import org.springframework.data.neo4j.core.schema.Relationship.Direction;
 
+/**
+ * @author Mark Angrish
+ * @author Michael J. Simons
+ */
 @Node
 public class Movie {
 
-	@Id @GeneratedValue
-	private Long id;
-
+	@Id
 	private final String title;
 
-	@Relationship(type = "ACTED_IN", direction = INCOMING)
-	private Map<Person, Roles> actorsAndRoles = new HashMap<>();
+	@Property("tagline")
+	private final String description;
 
-	@Relationship(type = "DIRECTED", direction = INCOMING)
+	@Relationship(type = "ACTED_IN", direction = Direction.INCOMING)
+	private List<Actor> actors = new ArrayList<>();
+
+	@Relationship(type = "DIRECTED", direction = Direction.INCOMING)
 	private List<Person> directors = new ArrayList<>();
 
-	public Movie(String title) {
-		this.title = title;
-	}
+	private Integer released;
 
-	public Long getId() {
-		return id;
+	public Movie(String title, String description) {
+		this.title = title;
+		this.description = description;
 	}
 
 	public String getTitle() {
 		return title;
 	}
 
-	public Map<Person, Roles> getActorsAndRoles() {
-		return actorsAndRoles;
+	public List<Actor> getActors() {
+		return actors;
+	}
+
+	public void setActors(List<Actor> actors) {
+		this.actors = actors;
+	}
+
+	public String getDescription() {
+		return description;
 	}
 
 	public List<Person> getDirectors() {
 		return directors;
+	}
+
+	public Integer getReleased() {
+		return released;
+	}
+
+	public void setReleased(Integer released) {
+		this.released = released;
 	}
 }
