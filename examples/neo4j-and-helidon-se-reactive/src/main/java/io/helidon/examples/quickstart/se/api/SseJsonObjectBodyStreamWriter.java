@@ -28,7 +28,7 @@ public final class SseJsonObjectBodyStreamWriter implements MessageBodyStreamWri
 
 	@Override
 	public PredicateResult accept(GenericType<?> type, MessageBodyWriterContext context) {
-		return PredicateResult.supports(Movie.class, type);
+		return PredicateResult.supports(Object.class, type);
 	}
 
 	@Override
