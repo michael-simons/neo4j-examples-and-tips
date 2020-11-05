@@ -1,6 +1,11 @@
 
 package io.helidon.examples.quickstart.se;
 
+import java.io.StringReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +41,7 @@ public class MainTest {
                 .build();
     }
 
-   
+
     @BeforeAll
     public static void startTheServer() throws Exception {
 
@@ -104,13 +109,18 @@ public class MainTest {
 
     @Test
     void testMovies() throws Exception {
-            
-        webClient.get()
-                .path("api/movies")
-                .request(JsonObject.class)
-                .thenAccept(result -> Assertions.assertEquals("The Matrix", result.getString("title")))
-                .toCompletableFuture()
-                .get();
+
+        var client = HttpClient.newBuilder()
+            .build();
+
+        var request = HttpRequest.newBuilder()
+            .uri(URI.create("http://localhost:" + webServer.port() + "/api/movies"))
+            .GET().build();
+
+        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        var resultObject = Json.createReader(new StringReader(response.body().replaceFirst("data: ", ""))).readObject();
+        Assertions.assertEquals("The Matrix", resultObject.getString("title"));
 
     }
 
