@@ -66,7 +66,9 @@ public class MainTest {
                         + "  (JoelS)-[:PRODUCED]->(TheMatrix)").consume()
                 );
         }
-        
+
+        // Don't know how to set this dynamically otherwise in Helidon
+        System.setProperty("neo4j.driver.uri", neo4jContainer.getBoltUrl());
 
         webServer = Main.startServer();
 

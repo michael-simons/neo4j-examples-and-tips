@@ -32,12 +32,12 @@ class MainTest {
 
 	@BeforeAll
 	public static void startTheServer() throws Exception {
-		server = Server.create().start();
-		serverUrl = "http://localhost:" + server.port();
-
 		neo4jContainer = new Neo4jContainer<>("neo4j:4.0")
 			.withAdminPassword("secret");
 		neo4jContainer.start();
+
+		// Don't know how to set this dynamically otherwise in Helidon
+		System.setProperty("neo4j.driver.uri", neo4jContainer.getBoltUrl());
 
 		try (Driver driver = GraphDatabase.driver(neo4jContainer.getBoltUrl(), AuthTokens.basic("neo4j", "secret"));
 			Session session = driver.session()) {
@@ -59,6 +59,9 @@ class MainTest {
 					+ "  (LanaW)-[:DIRECTED]->(TheMatrix),\n"
 					+ "  (JoelS)-[:PRODUCED]->(TheMatrix)").consume());
 		}
+
+		server = Server.create().start();
+		serverUrl = "http://localhost:" + server.port();
 	}
 
 	@AfterAll

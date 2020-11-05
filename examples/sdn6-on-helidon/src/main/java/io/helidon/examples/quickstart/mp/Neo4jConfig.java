@@ -6,6 +6,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
@@ -19,9 +20,13 @@ public class Neo4jConfig {
 
 	@Produces
 	@ApplicationScoped
-	public Driver driver() {
+	public Driver driver(
+		@ConfigProperty(name = "neo4j.driver.uri") String url,
+		@ConfigProperty(name = "neo4j.driver.authentication.username") String username,
+		@ConfigProperty(name = "neo4j.driver.authentication.password") String password
+	) {
 		return GraphDatabase
-			.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "secret"), Config.builder().withLogging(
+			.driver(url, AuthTokens.basic(username, password), Config.builder().withLogging(
 				Logging.javaUtilLogging(Level.INFO)).build());
 	}
 
