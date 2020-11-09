@@ -9,6 +9,7 @@ import io.helidon.media.common.MessageBodyStreamWriter;
 import io.helidon.media.common.MessageBodyWriterContext;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.Flow;
 
 import javax.json.bind.Jsonb;
@@ -37,7 +38,7 @@ public final class SseJsonObjectBodyStreamWriter implements MessageBodyStreamWri
 
 		context.contentType(APPLICATION_X_NDJSON);
 		return Multi.defer(() -> publisher)
-			.flatMap(m -> Multi.just(
+			.flatMapIterable(m -> List.of(
 				DataChunk.create(DATA),
 				DataChunk.create(JSON_FACTORY.toJson(m).getBytes(StandardCharsets.UTF_8)),
 				DataChunk.create(NL))

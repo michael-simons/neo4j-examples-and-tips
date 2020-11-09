@@ -28,7 +28,10 @@ public final class MovieRepository {
 				return Single.just(session);
 			})
 			.flatMap(this::executeQuery)
-			.onTerminate(() -> sessionHolder.get().close());
+			.onTerminate(() -> Single
+				.create(FlowAdapters.toFlowPublisher(sessionHolder.get().close()))
+				.toOptionalSingle()
+				.subscribe(empty -> {}));
 	}
 
 	private Multi<Movie> executeQuery(RxSession rxSession) {
