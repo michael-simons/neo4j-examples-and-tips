@@ -68,7 +68,7 @@ public class MainTest {
         }
 
         // Don't know how to set this dynamically otherwise in Helidon
-        System.setProperty("neo4j.driver.uri", neo4jContainer.getBoltUrl());
+        System.setProperty("neo4j.uri", neo4jContainer.getBoltUrl());
 
         webServer = Main.startServer();
 

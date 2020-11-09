@@ -21,9 +21,9 @@ public class Neo4jConfig {
 	@Produces
 	@ApplicationScoped
 	public Driver driver(
-		@ConfigProperty(name = "neo4j.driver.uri") String url,
-		@ConfigProperty(name = "neo4j.driver.authentication.username") String username,
-		@ConfigProperty(name = "neo4j.driver.authentication.password") String password
+		@ConfigProperty(name = "neo4j.uri") String url,
+		@ConfigProperty(name = "neo4j.authentication.username") String username,
+		@ConfigProperty(name = "neo4j.authentication.password") String password
 	) {
 		return GraphDatabase
 			.driver(url, AuthTokens.basic(username, password), Config.builder().withLogging(

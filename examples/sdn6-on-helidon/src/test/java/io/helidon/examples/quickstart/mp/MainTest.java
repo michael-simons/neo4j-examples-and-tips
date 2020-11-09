@@ -37,7 +37,7 @@ class MainTest {
 		neo4jContainer.start();
 
 		// Don't know how to set this dynamically otherwise in Helidon
-		System.setProperty("neo4j.driver.uri", neo4jContainer.getBoltUrl());
+		System.setProperty("neo4j.uri", neo4jContainer.getBoltUrl());
 
 		try (Driver driver = GraphDatabase.driver(neo4jContainer.getBoltUrl(), AuthTokens.basic("neo4j", "secret"));
 			Session session = driver.session()) {
