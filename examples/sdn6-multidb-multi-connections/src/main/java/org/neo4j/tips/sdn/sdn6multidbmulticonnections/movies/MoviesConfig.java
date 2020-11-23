@@ -5,7 +5,6 @@ import java.util.Set;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.domain.EntityScanner;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
@@ -24,13 +23,13 @@ import org.springframework.data.neo4j.core.transaction.Neo4jTransactionManager;
 import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
 import org.springframework.transaction.PlatformTransactionManager;
 
+@Configuration(proxyBeanMethods = false)
 @EnableNeo4jRepositories(
 	basePackageClasses = MoviesConfig.class,
 	neo4jMappingContextRef = "moviesContext",
 	neo4jTemplateRef = "moviesTemplate",
 	transactionManagerRef = "moviesManager"
 )
-@Configuration(proxyBeanMethods = false)
 public class MoviesConfig {
 
 	@Primary

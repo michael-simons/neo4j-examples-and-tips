@@ -24,7 +24,7 @@ import org.springframework.data.neo4j.core.transaction.Neo4jTransactionManager;
 import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
 import org.springframework.transaction.PlatformTransactionManager;
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableNeo4jRepositories(
 	basePackageClasses = WhateverConfig.class,
 	neo4jMappingContextRef = "fitnessContext",
