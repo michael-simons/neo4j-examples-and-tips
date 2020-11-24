@@ -24,7 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Database config used:
  * create user u_movies set PASSWORD "p_movies" change not required;
  *
- * create database movies
+ * create database movies;
  *
  * CREATE ROLE movies_publisher AS COPY OF publisher;
  * REVOKE GRANT ACCESS ON DATABASES * FROM movies_publisher;
@@ -34,7 +34,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * create user u_fitness set PASSWORD "p_fitness" change not required;
  *
- * create database fitness
+ * create database fitness;
  *
  * CREATE ROLE fitness_publisher AS COPY OF publisher;
  * REVOKE GRANT ACCESS ON DATABASES * FROM fitness_publisher;
