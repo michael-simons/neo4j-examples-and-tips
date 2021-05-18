@@ -1,10 +1,12 @@
 package org.neo4j.tips.sdn.sdn6multidbmulticonnections.movies;
 
+import reactor.core.publisher.Mono;
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.tips.sdn.sdn6multidbmulticonnections.Neo4jPropertiesConfig;
-import org.neo4j.tips.sdn.sdn6multidbmulticonnections.health.DatabaseSelectionAwareNeo4jHealthIndicator;
+import org.neo4j.tips.sdn.sdn6multidbmulticonnections.health.DatabaseSelectionAwareNeo4jReactiveHealthIndicator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataProperties;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
@@ -12,18 +14,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.neo4j.core.DatabaseSelection;
-import org.springframework.data.neo4j.core.DatabaseSelectionProvider;
-import org.springframework.data.neo4j.core.Neo4jClient;
-import org.springframework.data.neo4j.core.Neo4jOperations;
-import org.springframework.data.neo4j.core.Neo4jTemplate;
+import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider;
+import org.springframework.data.neo4j.core.ReactiveNeo4jClient;
+import org.springframework.data.neo4j.core.ReactiveNeo4jOperations;
+import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
 import org.springframework.data.neo4j.core.convert.Neo4jConversions;
 import org.springframework.data.neo4j.core.mapping.Neo4jMappingContext;
-import org.springframework.data.neo4j.core.transaction.Neo4jTransactionManager;
-import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager;
+import org.springframework.data.neo4j.repository.config.EnableReactiveNeo4jRepositories;
+import org.springframework.transaction.ReactiveTransactionManager;
 
 @Configuration(proxyBeanMethods = false)
-@EnableNeo4jRepositories(
+@EnableReactiveNeo4jRepositories(
 	basePackageClasses = MoviesConfig.class,
 	neo4jMappingContextRef = "moviesContext",
 	neo4jTemplateRef = "moviesTemplate",
@@ -41,37 +43,37 @@ public class MoviesConfig {
 	}
 
 	@Primary @Bean
-	public Neo4jClient moviesClient(@Qualifier("moviesDriver") Driver driver) {
-		return Neo4jClient.create(driver);
+	public ReactiveNeo4jClient moviesClient(@Qualifier("moviesDriver") Driver driver) {
+		return ReactiveNeo4jClient.create(driver);
 	}
 
 	@Primary @Bean
-	public Neo4jOperations moviesTemplate(
-		@Qualifier("moviesClient") Neo4jClient moviesClient,
+	public DatabaseSelectionAwareNeo4jReactiveHealthIndicator movieHealthIndicator(@Qualifier("moviesDriver") Driver driver,
+		@Qualifier("moviesSelection") ReactiveDatabaseSelectionProvider moviesSelection) {
+		return new DatabaseSelectionAwareNeo4jReactiveHealthIndicator(driver, moviesSelection);
+	}
+
+	@Primary @Bean
+	public ReactiveNeo4jOperations moviesTemplate(
+		@Qualifier("moviesClient") ReactiveNeo4jClient moviesClient,
 		@Qualifier("moviesContext") Neo4jMappingContext moviesContext,
-		@Qualifier("moviesSelection") DatabaseSelectionProvider moviesSelection
+		@Qualifier("moviesSelection") ReactiveDatabaseSelectionProvider moviesSelection
 	) {
-		return new Neo4jTemplate(moviesClient, moviesContext, moviesSelection);
+		return new ReactiveNeo4jTemplate(moviesClient, moviesContext, moviesSelection);
 	}
 
 	@Primary @Bean
-	public DatabaseSelectionAwareNeo4jHealthIndicator movieHealthIndicator(@Qualifier("moviesDriver") Driver driver,
-		@Qualifier("moviesSelection") DatabaseSelectionProvider moviesSelection) {
-		return new DatabaseSelectionAwareNeo4jHealthIndicator(driver, moviesSelection);
-	}
-
-	@Primary @Bean
-	public PlatformTransactionManager moviesManager(
+	public ReactiveTransactionManager moviesManager(
 		@Qualifier("moviesDriver") Driver driver,
-		@Qualifier("moviesSelection") DatabaseSelectionProvider moviesSelection
+		@Qualifier("moviesSelection") ReactiveDatabaseSelectionProvider moviesSelection
 	) {
-		return new Neo4jTransactionManager(driver, moviesSelection);
+		return new ReactiveNeo4jTransactionManager(driver, moviesSelection);
 	}
 
 	@Primary @Bean
-	public DatabaseSelectionProvider moviesSelection(
+	public ReactiveDatabaseSelectionProvider moviesSelection(
 		@Qualifier("moviesDataProperties") Neo4jDataProperties dataProperties) {
-		return () -> DatabaseSelection.byName(dataProperties.getDatabase());
+		return () -> Mono.just(DatabaseSelection.byName(dataProperties.getDatabase()));
 	}
 
 	@Primary @Bean

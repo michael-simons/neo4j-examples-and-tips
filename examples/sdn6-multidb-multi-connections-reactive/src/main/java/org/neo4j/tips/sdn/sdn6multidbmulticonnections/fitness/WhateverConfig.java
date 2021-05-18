@@ -1,28 +1,30 @@
 package org.neo4j.tips.sdn.sdn6multidbmulticonnections.fitness;
 
+import reactor.core.publisher.Mono;
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.tips.sdn.sdn6multidbmulticonnections.Neo4jPropertiesConfig;
-import org.neo4j.tips.sdn.sdn6multidbmulticonnections.health.DatabaseSelectionAwareNeo4jHealthIndicator;
+import org.neo4j.tips.sdn.sdn6multidbmulticonnections.health.DatabaseSelectionAwareNeo4jReactiveHealthIndicator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataProperties;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.neo4j.core.DatabaseSelection;
-import org.springframework.data.neo4j.core.DatabaseSelectionProvider;
-import org.springframework.data.neo4j.core.Neo4jClient;
-import org.springframework.data.neo4j.core.Neo4jOperations;
-import org.springframework.data.neo4j.core.Neo4jTemplate;
+import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider;
+import org.springframework.data.neo4j.core.ReactiveNeo4jClient;
+import org.springframework.data.neo4j.core.ReactiveNeo4jOperations;
+import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
 import org.springframework.data.neo4j.core.convert.Neo4jConversions;
 import org.springframework.data.neo4j.core.mapping.Neo4jMappingContext;
-import org.springframework.data.neo4j.core.transaction.Neo4jTransactionManager;
-import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager;
+import org.springframework.data.neo4j.repository.config.EnableReactiveNeo4jRepositories;
+import org.springframework.transaction.ReactiveTransactionManager;
 
 @Configuration(proxyBeanMethods = false)
-@EnableNeo4jRepositories(
+@EnableReactiveNeo4jRepositories(
 	basePackageClasses = WhateverConfig.class,
 	neo4jMappingContextRef = "fitnessContext",
 	neo4jTemplateRef = "fitnessTemplate",
@@ -40,37 +42,37 @@ public class WhateverConfig {
 	}
 
 	@Bean
-	public Neo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver) {
-		return Neo4jClient.create(driver);
+	public ReactiveNeo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver) {
+		return ReactiveNeo4jClient.create(driver);
 	}
 
 	@Bean
-	public DatabaseSelectionAwareNeo4jHealthIndicator fitnessHealthIndicator(@Qualifier("fitnessDriver") Driver driver,
-		@Qualifier("fitnessSelection") DatabaseSelectionProvider fitnessSelection) {
-		return new DatabaseSelectionAwareNeo4jHealthIndicator(driver, fitnessSelection);
+	public DatabaseSelectionAwareNeo4jReactiveHealthIndicator fitnessHealthIndicator(@Qualifier("fitnessDriver") Driver driver,
+		@Qualifier("fitnessSelection") ReactiveDatabaseSelectionProvider moviesSelection) {
+		return new DatabaseSelectionAwareNeo4jReactiveHealthIndicator(driver, moviesSelection);
 	}
 
 	@Bean
-	public Neo4jOperations fitnessTemplate(
-		@Qualifier("fitnessClient") Neo4jClient fitnessClient,
+	public ReactiveNeo4jOperations fitnessTemplate(
+		@Qualifier("fitnessClient") ReactiveNeo4jClient fitnessClient,
 		@Qualifier("fitnessContext") Neo4jMappingContext fitnessContext,
-		@Qualifier("fitnessSelection") DatabaseSelectionProvider fitnessSelection
+		@Qualifier("fitnessSelection") ReactiveDatabaseSelectionProvider fitnessSelection
 	) {
-		return new Neo4jTemplate(fitnessClient, fitnessContext, fitnessSelection);
+		return new ReactiveNeo4jTemplate(fitnessClient, fitnessContext, fitnessSelection);
 	}
 
 	@Bean
-	public PlatformTransactionManager fitnessManager(
+	public ReactiveTransactionManager fitnessManager(
 		@Qualifier("fitnessDriver") Driver driver,
-		@Qualifier("fitnessSelection") DatabaseSelectionProvider fitnessSelection
+		@Qualifier("fitnessSelection") ReactiveDatabaseSelectionProvider fitnessSelection
 	) {
-		return new Neo4jTransactionManager(driver, fitnessSelection);
+		return new ReactiveNeo4jTransactionManager(driver, fitnessSelection);
 	}
 
 	@Bean
-	public DatabaseSelectionProvider fitnessSelection(
+	public ReactiveDatabaseSelectionProvider fitnessSelection(
 		@Qualifier("fitnessDataProperties") Neo4jDataProperties dataProperties) {
-		return () -> DatabaseSelection.byName(dataProperties.getDatabase());
+		return () -> Mono.just(DatabaseSelection.byName(dataProperties.getDatabase()));
 	}
 
 	@Bean

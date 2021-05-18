@@ -11,12 +11,12 @@ import org.neo4j.tips.sdn.sdn6multidbmulticonnections.movies.MovieRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.data.neo4j.core.Neo4jClient;
-import org.springframework.data.neo4j.core.Neo4jTemplate;
 import org.springframework.data.neo4j.core.PreparedQuery;
+import org.springframework.data.neo4j.core.ReactiveNeo4jClient;
+import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 /**
  * Database config used:
@@ -39,6 +39,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  * GRANT ACCESS ON DATABASE fitness TO fitness_publisher;
  * GRANT ROLE fitness_publisher TO u_fitness;
  * ```
+ *
+ * NOTE: THIS CODE CONTAINS TONS OF BLOCKING GET!
+ *       DON'T DO THIS! Really, don't!
  */
 @Component
 public class Example implements CommandLineRunner {
@@ -56,31 +59,34 @@ public class Example implements CommandLineRunner {
 	private Driver fitnessDriver;
 
 	@Autowired @Qualifier("moviesClient")
-	private Neo4jClient moviesClient;
+	private ReactiveNeo4jClient moviesClient;
 
 	@Autowired @Qualifier("fitnessClient")
-	private Neo4jClient fitnessClient;
+	private ReactiveNeo4jClient fitnessClient;
 
 	@Autowired @Qualifier("moviesManager")
-	private PlatformTransactionManager moviesManager;
+	private ReactiveTransactionManager moviesManager;
 
 	@Autowired @Qualifier("fitnessManager")
-	private PlatformTransactionManager fitnessManager;
+	private ReactiveTransactionManager fitnessManager;
 
 	@Autowired @Qualifier("moviesTemplate")
-	private Neo4jTemplate moviesTemplate;
+	private ReactiveNeo4jTemplate moviesTemplate;
 
 	@Autowired @Qualifier("fitnessTemplate")
-	private Neo4jTemplate fitnessTemplate;
+	private ReactiveNeo4jTemplate fitnessTemplate;
 
 	@Override
-	public void run(String... args) throws Exception {
+	public void run(String... args) {
+
 		movieRepository.save(new Movie("A Test", "A Tagline"));
 		movieRepository.findById("A Test")
+			.blockOptional()
 			.ifPresentOrElse(m -> System.out.println("Found " + m), () -> System.out.println("Found nothing"));
 
-		var id = whateverRepository.save(new Whatever("I don't know what this is.")).getId();
+		var id = whateverRepository.save(new Whatever("I don't know what this is.")).block().getId();
 		whateverRepository.findById(id)
+			.blockOptional()
 			.ifPresentOrElse(m -> System.out.println("Found " + m), () -> System.out.println("Found nothing"));
 
 		// Using the wrong _driver_ (that does not know a static concept of database, only for the session)
@@ -99,18 +105,18 @@ public class Example implements CommandLineRunner {
 
 		// Same with the client OUT SIDE A TRANSACTION!
 		// If you omit it, it goes to the default db
-		db = moviesClient.query(dbNameQuery).in("movies").fetchAs(String.class).one().get();
+		db = moviesClient.query(dbNameQuery).in("movies").fetchAs(String.class).one().block();
 		System.out.println(db);
 
-		db = fitnessClient.query(dbNameQuery).in("fitness").fetchAs(String.class).one().get();
+		db = fitnessClient.query(dbNameQuery).in("fitness").fetchAs(String.class).one().block();
 		System.out.println(db);
 
 		// Inside a transaction, it _must_ match the one of the tx manager
-		db = new TransactionTemplate(moviesManager)
-			.execute(t -> moviesClient.query(dbNameQuery).in("movies").fetchAs(String.class).one().get());
+		db = TransactionalOperator.create(moviesManager)
+			.transactional(moviesClient.query(dbNameQuery).in("movies").fetchAs(String.class).one()).block();
 		System.out.println(db);
-		db = new TransactionTemplate(fitnessManager)
-			.execute(t -> fitnessClient.query(dbNameQuery).in("fitness").fetchAs(String.class).one().get());
+		db = TransactionalOperator.create(fitnessManager)
+			.transactional(fitnessClient.query(dbNameQuery).in("fitness").fetchAs(String.class).one()).block();
 		System.out.println(db);
 
 		// Templates do all this above automatically.
@@ -120,10 +126,10 @@ public class Example implements CommandLineRunner {
 			.usingMappingFunction((t, r) -> r.get("name").asString())
 			.build();
 
-		db = moviesTemplate.toExecutableQuery(preparedQuery).getSingleResult().get();
+		db = moviesTemplate.toExecutableQuery(preparedQuery).flatMap(q -> q.getSingleResult()).block();
 		System.out.println(db);
 
-		db = fitnessTemplate.toExecutableQuery(preparedQuery).getSingleResult().get();
+		db = fitnessTemplate.toExecutableQuery(preparedQuery).flatMap(q -> q.getSingleResult()).block();
 		System.out.println(db);
 	}
 }

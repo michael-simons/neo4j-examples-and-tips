@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.neo4j.tips.sdn</groupId>
-	<artifactId>sdn6-multidb-multi-connections</artifactId>
+	<artifactId>sdn6-multidb-multi-connections-reactive</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>sdn6-multidb-multi-connections</name>
 	<description>Demo project for Spring Boot</description>
@@ -22,6 +22,11 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-neo4j</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-core</artifactId>
 		</dependency>
 
 		<dependency>
