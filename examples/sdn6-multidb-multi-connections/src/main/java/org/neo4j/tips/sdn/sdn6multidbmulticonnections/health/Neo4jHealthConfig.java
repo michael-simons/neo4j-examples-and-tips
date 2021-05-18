@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.actuate.health.CompositeHealthContributor;
 import org.springframework.boot.actuate.health.HealthContributor;
+import org.springframework.boot.actuate.health.HealthContributorNameFactory;
 import org.springframework.boot.actuate.health.HealthContributorRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,12 +22,9 @@ public class Neo4jHealthConfig {
 	@Bean
 	InitializingBean healthContributorRegistryCleaner(HealthContributorRegistry healthContributorRegistry,
 		Map<String, DatabaseSelectionAwareNeo4jHealthIndicator> customNeo4jHealthIndicators) {
-		System.out.println("hallo?");
-		System.out.println(customNeo4jHealthIndicators.keySet());
-		healthContributorRegistry.forEach(f -> {
-			System.out.println(f.getName());
-		});
-		healthContributorRegistry.registerContributor();
-		return () -> customNeo4jHealthIndicators.keySet().forEach(healthContributorRegistry::unregisterContributor);
+		return () -> customNeo4jHealthIndicators.keySet()
+			.stream()
+			.map(HealthContributorNameFactory.INSTANCE)
+			.forEach(healthContributorRegistry::unregisterContributor);
 	}
 }
