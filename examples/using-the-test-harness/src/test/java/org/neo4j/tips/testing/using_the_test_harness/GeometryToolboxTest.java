@@ -23,17 +23,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.neo4j.driver.v1.Config;
-import org.neo4j.driver.v1.Driver;
-import org.neo4j.driver.v1.GraphDatabase;
-import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.StatementResult;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
+import org.neo4j.driver.Config;
+import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Values;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.harness.ServerControls;
-import org.neo4j.harness.TestServerBuilders;
+import org.neo4j.harness.Neo4j;
+import org.neo4j.harness.Neo4jBuilders;
 
 /**
  * Examples on how to use the Test-Harness.
@@ -44,15 +40,15 @@ import org.neo4j.harness.TestServerBuilders;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS) // <1>
 class GeometryToolboxTest {
 	// end::test-harness-setup[]
-	private static final Config driverConfig = Config.build().withoutEncryption().toConfig();
+	private static final Config driverConfig = Config.builder().withoutEncryption().build();
 
 	// tag::test-harness-setup[]
-	private ServerControls embeddedDatabaseServer; // <2>
+	private Neo4j embeddedDatabaseServer; // <2>
 
 	@BeforeAll // <3>
 	void initializeNeo4j() {
 
-		this.embeddedDatabaseServer = TestServerBuilders.newInProcessBuilder()
+		this.embeddedDatabaseServer = Neo4jBuilders.newInProcessBuilder()
 			.withProcedure(LocationConversion.class) // <4>
 			.withFunction(GetGeometry.class)
 			.withFixture("" // <5>
@@ -71,25 +67,26 @@ class GeometryToolboxTest {
 			)
 			// end::test-harness-setup[]
 			.withFixture(graphDatabaseService -> {
-				try (Transaction transaction = graphDatabaseService.beginTx()) {
-					Node node = graphDatabaseService.createNode(label("Thing"));
+				try (var transaction = graphDatabaseService.beginTx()) {
+					var node = transaction.createNode(label("Thing"));
 					node.setProperty("name", "An empty thing");
-					transaction.success();
+					transaction.commit();
 				}
 				return null;
 			})
 			// tag::test-harness-setup[]
-			.newServer(); // <6>
+			.withDisabledServer()
+			.build(); // <6>
 	}
 	// end::test-harness-setup[]
 
 	// tag::test-harness-usage1[]
 	@Test
 	void shouldConvertLocations() {
-		try (Driver driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI(), driverConfig);
-			Session session = driver.session()) {
+		try (var driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI(), driverConfig);
+			var session = driver.session()) {
 
-			StatementResult result = session.run(""
+			var result = session.run(""
 				+ " MATCH (n:Place) WITH collect(n) AS nodes"
 				+ " CALL examples.convertLegacyLocation(nodes) YIELD node"
 				+ " RETURN node ORDER BY node.name");
@@ -97,7 +94,7 @@ class GeometryToolboxTest {
 			assertThat(result.stream())
 				.hasSize(2)
 				.extracting(r -> {
-					Value node = r.get("node");
+					var node = r.get("node");
 					return node.get("location").asPoint();
 				})
 				.containsExactly(
@@ -110,10 +107,10 @@ class GeometryToolboxTest {
 
 	@Test
 	void shouldGenerateWkt() {
-		try (Driver driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI(), driverConfig);
-			Session session = driver.session()) {
+		try (var driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI(), driverConfig);
+			var session = driver.session()) {
 
-			StatementResult result = session.run(""
+			var result = session.run(""
 				+ " MATCH (n:Thing)"
 				+ " RETURN examples.getGeometry(n) as geometry ORDER BY n.name");
 
@@ -123,7 +120,7 @@ class GeometryToolboxTest {
 			assertThat(result.stream())
 				.hasSize(2)
 				.extracting(r -> {
-					Value geometry = r.get("geometry");
+					var geometry = r.get("geometry");
 					return geometry.isNull() ? null : geometry.asString();
 				})
 				.containsExactly(expectedWkt, null);
