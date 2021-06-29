@@ -51,6 +51,7 @@ class GeometryToolboxTest {
 		this.embeddedDatabaseServer = Neo4jBuilders.newInProcessBuilder()
 			.withProcedure(LocationConversion.class) // <4>
 			.withFunction(GetGeometry.class)
+			.withAggregationFunction(GetPolygon.class)
 			.withFixture("" // <5>
 				+ " CREATE (:Place {name: 'Malmö', longitude: 12.995098, latitude: 55.611730})"
 				+ " CREATE (:Place {name: 'Aachen', longitude: 6.083736, latitude: 50.776381})"
@@ -63,6 +64,10 @@ class GeometryToolboxTest {
 				+ "   point({x:  0, y: 10}), "
 				+ "   point({x:  0, y:  0})] }"
 				+ " )"
+				+ " CREATE (:Point {location: point({x:  0, y:  0})}) -[:NEXT]-> "
+				+ "        (:Point {location: point({x:  10, y:  0})}) -[:NEXT]-> "
+				+ "        (:Point {location: point({x:  10, y: 10})}) -[:NEXT]-> "
+				+ "        (:Point {location: point({x:   0, y: 10})})"
 				// tag::test-harness-setup[]
 			)
 			// end::test-harness-setup[]
@@ -124,6 +129,27 @@ class GeometryToolboxTest {
 					return geometry.isNull() ? null : geometry.asString();
 				})
 				.containsExactly(expectedWkt, null);
+		}
+	}
+
+	@Test
+	void shouldGetPolygon() {
+		try (var driver = GraphDatabase.driver(embeddedDatabaseServer.boltURI(), driverConfig);
+			var session = driver.session()) {
+
+			var result = session.run("MATCH p=(start:Point) -[:NEXT*..] -> (next)\n"
+									 + "WHERE NOT ((:Point)-[:NEXT]->(start))\n"
+									 + "AND NOT (next)-[:NEXT]->()\n"
+									 + "UNWIND nodes(p) AS node\n"
+									 + "RETURN examples.getPolygon(node) AS polygon");
+
+			var expectedWkt = "POLYGON (("
+							  + "0.000000 0.000000,10.000000 0.000000,10.000000 10.000000,0.000000 10.000000,0.000000 0.000000"
+							  + "))";
+			assertThat(result.stream())
+				.hasSize(1)
+				.extracting(r -> r.get("polygon").asString())
+				.containsExactly(expectedWkt);
 		}
 	}
 
