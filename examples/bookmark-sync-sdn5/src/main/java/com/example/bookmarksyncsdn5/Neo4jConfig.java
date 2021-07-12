@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.neo4j.annotation.EnableBookmarkManagement;
 import org.springframework.data.neo4j.bookmark.BookmarkManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
  * Redis repositories themselves have been turned off with {@code spring.data.redis.repositories.enabled=false}.
  */
 @Configuration(proxyBeanMethods = false)
+@EnableBookmarkManagement
 public class Neo4jConfig {
 
 	private static final String TOPIC_NAME = "neo4j-bookmark-exchange";
