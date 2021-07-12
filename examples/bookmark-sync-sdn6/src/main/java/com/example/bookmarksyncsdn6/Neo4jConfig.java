@@ -41,7 +41,7 @@ public class Neo4jConfig {
 	 */
 	@Bean
 	public ApplicationListener<Neo4jBookmarksUpdatedEvent> bookmarkListener(
-		RedisTemplate<String, Object> messageTemplate) {
+		RedisTemplate<Object, Object> messageTemplate) {
 		return event -> {
 			Set<String> latestBookmarks = event.getBookmarks().stream()
 				.flatMap(bookmark -> bookmark.values().stream())
@@ -52,7 +52,7 @@ public class Neo4jConfig {
 	}
 
 	/**
-	 * A component that listens on a topic and just takes what comes in the topic and use it as new bookmarks.
+	 * A dedicated supplier of bookmarks, that will be prefilled via a messaging system.
 	 */
 	@Component
 	static class BookmarkSupplier implements Supplier<Set<Bookmark>> {
@@ -72,14 +72,9 @@ public class Neo4jConfig {
 		}
 	}
 
-	@Bean
-	RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-
-		var redisTemplate = new RedisTemplate<String, Object>();
-		redisTemplate.setConnectionFactory(connectionFactory);
-		return redisTemplate;
-	}
-
+	/**
+	 * Here an adapter is created between Redis and the dedicated BookmarkSupplier.
+	 */
 	@Bean
 	MessageListenerAdapter bookmarksReceivedAdapter(BookmarkSupplier receiver) {
 
@@ -89,9 +84,11 @@ public class Neo4jConfig {
 		return messageListenerAdapter;
 	}
 
+	/**
+	 * This is boilerplate for setting up the adapter from above to listen on the given topic.
+	 */
 	@Bean
-	RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
-		MessageListenerAdapter bookmarksReceivedAdapter) {
+	RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory, MessageListenerAdapter bookmarksReceivedAdapter) {
 
 		var container = new RedisMessageListenerContainer();
 		container.setConnectionFactory(connectionFactory);
@@ -101,12 +98,9 @@ public class Neo4jConfig {
 	}
 
 	/**
-	 * Plug everything together.
+	 * Plug everything together. Here we create a dedicated transaction manager that uses the special bookmark supplier.
 	 *
-	 * @param driver
-	 * @param databaseNameProvider
-	 * @param bookmarkSupplier
-	 * @return
+	 * All other collaborators come from the Neo4j auto configuration
 	 */
 	@Bean
 	public PlatformTransactionManager transactionManager(

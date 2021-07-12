@@ -28,10 +28,13 @@ public class Neo4jConfig {
 
 	private static final String TOPIC_NAME = "neo4j-bookmark-exchange";
 
+	/**
+	 * A custom implementation of a bookmarkmanager, doesn't require caffeein-cache.
+	 */
 	@Component
 	static class PublishingBookmarkManager implements BookmarkManager {
 
-		private final RedisTemplate<String, Object> messageTemplate;
+		private final RedisTemplate<Object, Object> messageTemplate;
 
 		private final Set<String> bookmarks = new HashSet<>();
 
@@ -39,7 +42,7 @@ public class Neo4jConfig {
 		private final Lock read = lock.readLock();
 		private final Lock write = lock.writeLock();
 
-		PublishingBookmarkManager(RedisTemplate<String, Object> messageTemplate) {
+		PublishingBookmarkManager(RedisTemplate<Object, Object> messageTemplate) {
 			this.messageTemplate = messageTemplate;
 		}
 
@@ -80,14 +83,9 @@ public class Neo4jConfig {
 		}
 	}
 
-	@Bean
-	RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-
-		var redisTemplate = new RedisTemplate<String, Object>();
-		redisTemplate.setConnectionFactory(connectionFactory);
-		return redisTemplate;
-	}
-
+	/**
+	 * Here an adapter is created between Redis and the BookmarkManager
+	 */
 	@Bean
 	MessageListenerAdapter bookmarksReceivedAdapter(BookmarkManager receiver) {
 
@@ -97,6 +95,9 @@ public class Neo4jConfig {
 		return messageListenerAdapter;
 	}
 
+	/**
+	 * This is boilerplate for setting up the adapter from above to listen on the given topic.
+	 */
 	@Bean
 	RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
 		MessageListenerAdapter bookmarksReceivedAdapter) {
