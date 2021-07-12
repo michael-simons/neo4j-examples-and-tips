@@ -31,7 +31,7 @@ public class Neo4jConfig {
 	private static final String TOPIC_NAME = "neo4j-bookmark-exchange";
 
 	/**
-	 * A custom implementation of a bookmarkmanager, doesn't require caffeein-cache.
+	 * A custom implementation of a bookmark manager, doesn't require caffeine-cache.
 	 */
 	@Component
 	static class PublishingBookmarkManager implements BookmarkManager {
