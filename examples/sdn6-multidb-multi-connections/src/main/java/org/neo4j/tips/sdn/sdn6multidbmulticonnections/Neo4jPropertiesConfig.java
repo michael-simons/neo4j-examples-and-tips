@@ -47,31 +47,4 @@ public class Neo4jPropertiesConfig {
 	public Neo4jDataProperties fitnessDataProperties() {
 		return new Neo4jDataProperties();
 	}
-
-	/**
-	 * Move this somewhere meaningful ;)
-	 *
-	 * @param basePackage
-	 * @return
-	 * @throws ClassNotFoundException
-	 */
-	public static final Set<Class<?>> scanForEntities(String basePackage) throws ClassNotFoundException {
-
-		if (!StringUtils.hasText(basePackage)) {
-			return Collections.emptySet();
-		}
-		Set<Class<?>> initialEntitySet = new HashSet<>();
-
-		ClassPathScanningCandidateComponentProvider componentProvider = new ClassPathScanningCandidateComponentProvider(
-			false);
-		componentProvider.addIncludeFilter(new AnnotationTypeFilter(Node.class));
-		componentProvider.addIncludeFilter(new AnnotationTypeFilter(Persistent.class));
-		componentProvider.addIncludeFilter(new AnnotationTypeFilter(RelationshipProperties.class));
-
-		ClassLoader classLoader = Neo4jPropertiesConfig.class.getClassLoader();
-		for (BeanDefinition candidate : componentProvider.findCandidateComponents(basePackage)) {
-			initialEntitySet.add(ClassUtils.forName(candidate.getBeanClassName(), classLoader));
-		}
-		return initialEntitySet;
-	}
 }

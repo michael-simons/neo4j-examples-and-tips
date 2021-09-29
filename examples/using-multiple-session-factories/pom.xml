@@ -16,22 +16,16 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.0.5.RELEASE</version>
+		<version>2.3.12.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<!-- tag::select-releasetrain[] -->
 	<properties>
-		<!-- end::select-releasetrain[] -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>10</java.version>
 		<neo4j-server.version>3.4.7</neo4j-server.version>
-
-		<!-- tag::select-releasetrain[] -->
-		<spring-data-releasetrain.version>Lovelace-RELEASE</spring-data-releasetrain.version>
 	</properties>
-	<!-- end::select-releasetrain[] -->
 
 	<dependencies>
 		<dependency>

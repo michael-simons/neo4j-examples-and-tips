@@ -26,16 +26,7 @@ I have added the https://spring.io/guides/gs/accessing-data-neo4j/[Spring Boot S
 
 == Solution
 
-For this to work you'll need Spring Boot 2.x and the most recent release of Spring Data which is called https://spring.io/blog/2018/07/26/spring-data-lovelace-rc1-available[Spring Data Lovelace (RC1)].
-
-In a standard Spring Boot 2 application generated at https://start.spring.io[start.spring.io] you would change the Spring Data Release train with the following property:
-
-[source,xml,indent=0]
-[[select-releasetrain]]
-.pom.xml
-----
-include::{examples}/using-multiple-session-factories/pom.xml[tags=select-releasetrain]
-----
+For this to work you'll need Spring Boot 2.x and at least the Spring Data Lovelace release train (https://spring.io/blog/2018/07/26/spring-data-lovelace-rc1-available[Spring Data Lovelace (RC1)]).
 
 Then the solution can be broken down into two problems:
 

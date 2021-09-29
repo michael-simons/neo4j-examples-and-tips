@@ -1,5 +1,7 @@
 package org.neo4j.tips.sdn.sdn6multidbmulticonnections.fitness;
 
+import javax.annotation.Resource;
+
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
@@ -10,6 +12,8 @@ import org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataProperties;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.neo4j.config.Neo4jEntityScanner;
 import org.springframework.data.neo4j.core.DatabaseSelection;
 import org.springframework.data.neo4j.core.DatabaseSelectionProvider;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -40,8 +44,8 @@ public class WhateverConfig {
 	}
 
 	@Bean
-	public Neo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver) {
-		return Neo4jClient.create(driver);
+	public Neo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver, @Qualifier("fitnessSelection") DatabaseSelectionProvider fitnessSelection) {
+		return Neo4jClient.create(driver, fitnessSelection);
 	}
 
 	@Bean
@@ -74,12 +78,10 @@ public class WhateverConfig {
 	}
 
 	@Bean
-	public Neo4jMappingContext fitnessContext(Neo4jConversions neo4jConversions) throws ClassNotFoundException {
+	public Neo4jMappingContext fitnessContext(ResourceLoader resourceLoader, Neo4jConversions neo4jConversions) throws ClassNotFoundException {
 
 		Neo4jMappingContext context = new Neo4jMappingContext(neo4jConversions);
-		// See https://jira.spring.io/browse/DATAGRAPH-1441
-		// context.setStrict(true);
-		context.setInitialEntitySet(Neo4jPropertiesConfig.scanForEntities(this.getClass().getPackageName()));
+		context.setInitialEntitySet(Neo4jEntityScanner.get(resourceLoader).scan(this.getClass().getPackageName()));
 		return context;
 	}
 }
