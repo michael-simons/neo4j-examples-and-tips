@@ -5,13 +5,14 @@ import reactor.core.publisher.Mono;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.tips.sdn.sdn6multidbmulticonnections.Neo4jPropertiesConfig;
 import org.neo4j.tips.sdn.sdn6multidbmulticonnections.health.DatabaseSelectionAwareNeo4jReactiveHealthIndicator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataProperties;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.neo4j.config.Neo4jEntityScanner;
 import org.springframework.data.neo4j.core.DatabaseSelection;
 import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider;
 import org.springframework.data.neo4j.core.ReactiveNeo4jClient;
@@ -42,12 +43,14 @@ public class WhateverConfig {
 	}
 
 	@Bean
-	public ReactiveNeo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver) {
-		return ReactiveNeo4jClient.create(driver);
+	public ReactiveNeo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver,
+		@Qualifier("fitnessSelection") ReactiveDatabaseSelectionProvider fitnessSelection) {
+		return ReactiveNeo4jClient.create(driver, fitnessSelection);
 	}
 
 	@Bean
-	public DatabaseSelectionAwareNeo4jReactiveHealthIndicator fitnessHealthIndicator(@Qualifier("fitnessDriver") Driver driver,
+	public DatabaseSelectionAwareNeo4jReactiveHealthIndicator fitnessHealthIndicator(
+		@Qualifier("fitnessDriver") Driver driver,
 		@Qualifier("fitnessSelection") ReactiveDatabaseSelectionProvider moviesSelection) {
 		return new DatabaseSelectionAwareNeo4jReactiveHealthIndicator(driver, moviesSelection);
 	}
@@ -55,10 +58,9 @@ public class WhateverConfig {
 	@Bean
 	public ReactiveNeo4jOperations fitnessTemplate(
 		@Qualifier("fitnessClient") ReactiveNeo4jClient fitnessClient,
-		@Qualifier("fitnessContext") Neo4jMappingContext fitnessContext,
-		@Qualifier("fitnessSelection") ReactiveDatabaseSelectionProvider fitnessSelection
+		@Qualifier("fitnessContext") Neo4jMappingContext fitnessContext
 	) {
-		return new ReactiveNeo4jTemplate(fitnessClient, fitnessContext, fitnessSelection);
+		return new ReactiveNeo4jTemplate(fitnessClient, fitnessContext);
 	}
 
 	@Bean
@@ -76,12 +78,11 @@ public class WhateverConfig {
 	}
 
 	@Bean
-	public Neo4jMappingContext fitnessContext(Neo4jConversions neo4jConversions) throws ClassNotFoundException {
+	public Neo4jMappingContext fitnessContext(ResourceLoader resourceLoader, Neo4jConversions neo4jConversions)
+		throws ClassNotFoundException {
 
 		Neo4jMappingContext context = new Neo4jMappingContext(neo4jConversions);
-		// See https://jira.spring.io/browse/DATAGRAPH-1441
-		// context.setStrict(true);
-		context.setInitialEntitySet(Neo4jPropertiesConfig.scanForEntities(this.getClass().getPackageName()));
+		context.setInitialEntitySet(Neo4jEntityScanner.get(resourceLoader).scan(this.getClass().getPackageName()));
 		return context;
 	}
 }
