@@ -1,11 +1,8 @@
 package org.neo4j.tips.sdn.sdn6multidbmulticonnections.fitness;
 
-import javax.annotation.Resource;
-
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.tips.sdn.sdn6multidbmulticonnections.Neo4jPropertiesConfig;
 import org.neo4j.tips.sdn.sdn6multidbmulticonnections.health.DatabaseSelectionAwareNeo4jHealthIndicator;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataProperties;
@@ -44,7 +41,8 @@ public class WhateverConfig {
 	}
 
 	@Bean
-	public Neo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver, @Qualifier("fitnessSelection") DatabaseSelectionProvider fitnessSelection) {
+	public Neo4jClient fitnessClient(@Qualifier("fitnessDriver") Driver driver,
+		@Qualifier("fitnessSelection") DatabaseSelectionProvider fitnessSelection) {
 		return Neo4jClient.create(driver, fitnessSelection);
 	}
 
@@ -57,10 +55,9 @@ public class WhateverConfig {
 	@Bean
 	public Neo4jOperations fitnessTemplate(
 		@Qualifier("fitnessClient") Neo4jClient fitnessClient,
-		@Qualifier("fitnessContext") Neo4jMappingContext fitnessContext,
-		@Qualifier("fitnessSelection") DatabaseSelectionProvider fitnessSelection
+		@Qualifier("fitnessContext") Neo4jMappingContext fitnessContext
 	) {
-		return new Neo4jTemplate(fitnessClient, fitnessContext, fitnessSelection);
+		return new Neo4jTemplate(fitnessClient, fitnessContext);
 	}
 
 	@Bean
@@ -78,7 +75,8 @@ public class WhateverConfig {
 	}
 
 	@Bean
-	public Neo4jMappingContext fitnessContext(ResourceLoader resourceLoader, Neo4jConversions neo4jConversions) throws ClassNotFoundException {
+	public Neo4jMappingContext fitnessContext(ResourceLoader resourceLoader, Neo4jConversions neo4jConversions)
+		throws ClassNotFoundException {
 
 		Neo4jMappingContext context = new Neo4jMappingContext(neo4jConversions);
 		context.setInitialEntitySet(Neo4jEntityScanner.get(resourceLoader).scan(this.getClass().getPackageName()));

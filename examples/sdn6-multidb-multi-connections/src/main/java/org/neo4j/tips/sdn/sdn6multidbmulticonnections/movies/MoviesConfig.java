@@ -4,7 +4,6 @@ import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.tips.sdn.sdn6multidbmulticonnections.health.DatabaseSelectionAwareNeo4jHealthIndicator;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.data.neo4j.Neo4jDataProperties;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +32,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 public class MoviesConfig {
 
 	@Primary @Bean
-	public Driver moviesDriver(@Qualifier("moviesProperties") Neo4jProperties neo4jProperties) {
+	public Driver moviesDriver(Neo4jProperties neo4jProperties) {
 
 		var authentication = neo4jProperties.getAuthentication();
 		return GraphDatabase.driver(neo4jProperties.getUri(), AuthTokens.basic(
@@ -42,41 +41,39 @@ public class MoviesConfig {
 	}
 
 	@Primary @Bean
-	public Neo4jClient moviesClient(@Qualifier("moviesDriver") Driver driver, @Qualifier("moviesSelection") DatabaseSelectionProvider moviesSelection) {
+	public Neo4jClient moviesClient(Driver driver, DatabaseSelectionProvider moviesSelection) {
 		return Neo4jClient.create(driver, moviesSelection);
 	}
 
 	@Primary @Bean
 	public Neo4jOperations moviesTemplate(
-		@Qualifier("moviesClient") Neo4jClient moviesClient,
-		@Qualifier("moviesContext") Neo4jMappingContext moviesContext,
-		@Qualifier("moviesSelection") DatabaseSelectionProvider moviesSelection
+		Neo4jClient moviesClient,
+		Neo4jMappingContext moviesContext
 	) {
-		return new Neo4jTemplate(moviesClient, moviesContext, moviesSelection);
+		return new Neo4jTemplate(moviesClient, moviesContext);
 	}
 
 	@Primary @Bean
-	public DatabaseSelectionAwareNeo4jHealthIndicator movieHealthIndicator(@Qualifier("moviesDriver") Driver driver,
-		@Qualifier("moviesSelection") DatabaseSelectionProvider moviesSelection) {
+	public DatabaseSelectionAwareNeo4jHealthIndicator movieHealthIndicator(Driver driver,
+		DatabaseSelectionProvider moviesSelection) {
 		return new DatabaseSelectionAwareNeo4jHealthIndicator(driver, moviesSelection);
 	}
 
 	@Primary @Bean
-	public PlatformTransactionManager moviesManager(
-		@Qualifier("moviesDriver") Driver driver,
-		@Qualifier("moviesSelection") DatabaseSelectionProvider moviesSelection
+	public PlatformTransactionManager moviesManager(Driver driver, DatabaseSelectionProvider moviesSelection
 	) {
 		return new Neo4jTransactionManager(driver, moviesSelection);
 	}
 
 	@Primary @Bean
 	public DatabaseSelectionProvider moviesSelection(
-		@Qualifier("moviesDataProperties") Neo4jDataProperties dataProperties) {
+		Neo4jDataProperties dataProperties) {
 		return () -> DatabaseSelection.byName(dataProperties.getDatabase());
 	}
 
 	@Primary @Bean
-	public Neo4jMappingContext moviesContext(ResourceLoader resourceLoader, Neo4jConversions neo4jConversions) throws ClassNotFoundException {
+	public Neo4jMappingContext moviesContext(ResourceLoader resourceLoader, Neo4jConversions neo4jConversions)
+		throws ClassNotFoundException {
 
 		Neo4jMappingContext context = new Neo4jMappingContext(neo4jConversions);
 		context.setInitialEntitySet(Neo4jEntityScanner.get(resourceLoader).scan(this.getClass().getPackageName()));
