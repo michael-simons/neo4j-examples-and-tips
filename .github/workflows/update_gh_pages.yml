@@ -24,11 +24,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: gh-pages
-          path: build/gh-pages
+          path: target/gh-pages
       - name: Run docs generation
-        run:  ./gradlew generateHtml
+        run:  ./gradlew generateHtml && mv build/html5/* target/gh-pages
       - name: Commit to gh-pages
-        working-directory: ./build/html5
+        working-directory: ./target/gh-pages
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -37,6 +37,6 @@ jobs:
       - name: Push changes
         uses: ad-m/github-push-action@v0.5.0
         with:
-          directory: build/html5
+          directory: target/gh-pages
           branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
