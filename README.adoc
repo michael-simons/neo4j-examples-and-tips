@@ -1,4 +1,8 @@
-= Neo4j Examples around SDN, SDN with OGM and general driver usage.
+= Neo4j Examples around SDN6, older SDN+OGM and general driver usage.
+
+NOTE: All examples have been valid and accurate at the time of their indivual last commit.
+      Right now, I am not tracking all the updates to the libraries, not even the ones I maintain myself as a Neo4j employee.
+      I do my best to keep the examples up to date. In case anything is odd, broken or really utterly outdated, please open an issue.
 
 A somewhat curated list of Neo4j examples and tips, mostly around SDN with OGM (SDN 5.x), SDN 6 (previously SDN/RX) and testing.
 
@@ -9,3 +13,5 @@ A somewhat curated list of Neo4j examples and tips, mostly around SDN with OGM (
 * https://michael-simons.github.io/neo4j-examples-and-tips/what_are_the_building_blocks_of_sdn_and_ogm.html[What are the building blocks of SDN and OGM?]
 * https://michael-simons.github.io/neo4j-examples-and-tips/validate_transaction_settings.html[Validate your Neo4j transaction settings]
 * https://michael-simons.github.io/neo4j-examples-and-tips/sdn_and_causal_cluster.html[Use causal cluster support]
+
+While the link:/examples[examples] here are more use case driven, I also actively maintain https://github.com/michael-simons/neo4j-from-the-jvm-ecosystem[neo4j-from-the-jvm-ecosystem]. There I have a couple of options how to use Neo4j in different frameworks and all of them provide the same API to the outside world. Those examples come with a unified build and tck script.
