@@ -26,7 +26,7 @@ jobs:
           ref: gh-pages
           path: target/gh-pages
       - name: Run docs generation
-        run:  ./gradlew generateHtml && mv build/html5/* target/gh-pages
+        run:  ./gradlew generateHtml && cp -prf build/html5/* target/gh-pages
       - name: Commit to gh-pages
         working-directory: ./target/gh-pages
         run: |
