@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>org.neo4j.tips.sdn</groupId>
-	<artifactId>sdn6</artifactId>
+	<artifactId>sdn6-rest</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>sdn6</name>
 	<description>Demo project for Spring Boot</description>
@@ -25,7 +25,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-starter-data-rest</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>eu.michael-simons.neo4j</groupId>

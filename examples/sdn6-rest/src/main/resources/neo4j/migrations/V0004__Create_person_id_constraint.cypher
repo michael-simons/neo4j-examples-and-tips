@@ -1,0 +1,1 @@
+CREATE CONSTRAINT person_id_uk IF NOT EXISTS FOR (p:Person) REQUIRE p.id IS UNIQUE;

@@ -14,4 +14,6 @@ A somewhat curated list of Neo4j examples and tips, mostly around SDN with OGM (
 * https://michael-simons.github.io/neo4j-examples-and-tips/validate_transaction_settings.html[Validate your Neo4j transaction settings]
 * https://michael-simons.github.io/neo4j-examples-and-tips/sdn_and_causal_cluster.html[Use causal cluster support]
 
+TIP: The most recent SDN6 examples are link:/examples/sdn6[SDN6 (Plain SDN+Spring WebMVC)] and link:/examples/sdn6-rest[SDN6-REST (SDN+Spring Data REST)].
+
 While the link:/examples[examples] here are more use case driven, I also actively maintain https://github.com/michael-simons/neo4j-from-the-jvm-ecosystem[neo4j-from-the-jvm-ecosystem]. There I have a couple of options how to use Neo4j in different frameworks and all of them provide the same API to the outside world. Those examples come with a unified build and tck script.

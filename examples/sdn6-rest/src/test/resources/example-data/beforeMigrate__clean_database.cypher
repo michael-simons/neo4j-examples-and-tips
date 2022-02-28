@@ -1,0 +1,1 @@
+MATCH (n:Movie) DETACH DELETE n;
