@@ -88,14 +88,13 @@ I have a created a custom JUnit 5 extension to easily bring up a causal cluster 
 https://github.com/michael-simons/junit-jupiter-causal-cluster-testcontainer-extension[JUnit Jupiter Causal Cluster Testcontainer extension].
 
 [source,java]
-[[using-service]]
+[[testing-cc-support]]
 .DemoApplicationTest.java
 ----
 include::{examples}/sdn-and-causal-cluster/src/test/java/org/neo4j/tips/sdn/causal_cluster/DemoApplicationTest.java[tags=testing-cc-support,indent=0]
 ----
-<1> This informs JUnit 5 that we need a causal cluster. Numbers of leader and followers are configurable.
-<2> This brings a up a full Spring Environment on a random port, we want load tests so mocks won't do
-<3> This configures an initializer that is needed to pass the cluster URL to the SDN with OGM
-<4> This is the injection point for the entry point to the cluster
-<5> Which is passed on to OGM
-<6> The `TestRestTemplate` knows about the random port from 2.
+<.> This informs JUnit 5 that we need a causal cluster. Numbers of leader and followers are configurable.
+<.> This brings a up a full Spring Environment on a random port, we want load tests so mocks won't do
+<.> This is the injection point for the entry point to the cluster
+<.> This configures an initializer that is needed to pass the cluster URL to the SDN with OGM
+<.> The `TestRestTemplate` knows about the random port from 2.

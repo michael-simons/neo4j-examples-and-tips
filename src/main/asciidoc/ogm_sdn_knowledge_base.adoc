@@ -223,7 +223,7 @@ With the latest versions of Spring Boot 2.1 and 2.2 it is not necessary anymore 
 Your configuration would look similar like this:
 
 [source,java]
-[[entity-scan]]
+[[entity-custom-ogm-config]]
 .Neo4jConfig.java with custom OGM configuration
 ----
 import org.springframework.context.annotation.Bean;

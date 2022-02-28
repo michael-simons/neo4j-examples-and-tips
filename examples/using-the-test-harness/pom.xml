@@ -41,14 +41,18 @@
 		</dependency>
 
 		<!-- Test Dependencies -->
+		<!-- tag::test-harness-dep[] -->
 		<dependency>
+			<!-- end::test-harness-dep[] -->
 			<!-- This is used for a utility that lets us start Neo4j with
 				 a specific Procedure, which is nice for writing tests. -->
+			<!-- tag::test-harness-dep[] -->
 			<groupId>org.neo4j.test</groupId>
 			<artifactId>neo4j-harness</artifactId>
 			<version>${neo4j.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- end::test-harness-dep[] -->
 
 		<dependency>
 			<!-- Used to send cypher statements to our procedure. -->

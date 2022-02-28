@@ -1,14 +1,19 @@
 plugins {
-    id "org.asciidoctor.convert" version "1.5.8.1"
-    id 'com.github.jruby-gradle.base' version '1.6.0'
-    id 'org.kordamp.gradle.livereload' version '0.2.1'
+    id "org.asciidoctor.convert" version "2.4.0"
+    id "com.github.jruby-gradle.base" version "2.0.1"
+    id 'org.kordamp.gradle.livereload' version '0.4.0'
+}
+
+
+repositories {
+    ruby.gems()
 }
 
 group = "org.neo4j.tips"
 
 dependencies {
-    asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16'
-    gems 'rubygems:asciidoctor-diagram:1.5.10'
+    asciidoctor 'org.asciidoctor:asciidoctorj-pdf:1.6.2'
+    gems 'rubygems:asciidoctor-diagram:1.5.19'
 }
 
 import org.asciidoctor.gradle.AsciidoctorTask

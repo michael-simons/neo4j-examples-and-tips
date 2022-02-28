@@ -1,0 +1,42 @@
+name: update_gh_pages
+
+on:
+  push:
+    branches:
+      - master
+  create:
+    tags:
+      - '*'
+
+jobs:
+  update_gh_pages:
+    if: github.event_name == 'push' || (github.event_name == 'create' && github.event.ref_type == 'tag')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+            java-version: 11
+      - name: Install dita and co
+        run: sudo apt-get install -y ditaa graphviz
+      - name: Checkout gh-pages
+        uses: actions/checkout@v2
+        with:
+          ref: gh-pages
+          path: build/gh-pages
+      - name: Run docs generation
+        run:  ./gradlew generateHtml
+      - name: Commit to gh-pages
+        working-directory: ./build/html5
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Update GH-Pages."
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.5.0
+        with:
+          directory: build/html5
+          branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
