@@ -19,7 +19,8 @@ public final class Actor {
 	private Long id;
 
 	@TargetNode
-	@JsonIgnore
+	@JsonUnwrapped
+	@JsonIgnoreProperties({ "id" })
 	private final Person person;
 
 	private final List<String> roles;
@@ -37,5 +38,3 @@ public final class Actor {
 		return List.copyOf(roles);
 	}
 }
-
-

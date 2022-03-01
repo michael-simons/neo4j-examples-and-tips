@@ -6,12 +6,11 @@ import java.util.UUID;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
-import org.springframework.data.rest.core.annotation.RestResource;
 
 /**
  * @author Michael J. Simons
  */
-@RepositoryRestResource(path = "people")
+@RepositoryRestResource(path = "people", excerptProjection = InlineName.class)
 public interface PeopleRepository extends Neo4jRepository<Person, UUID> {
 
 	@Query("""
