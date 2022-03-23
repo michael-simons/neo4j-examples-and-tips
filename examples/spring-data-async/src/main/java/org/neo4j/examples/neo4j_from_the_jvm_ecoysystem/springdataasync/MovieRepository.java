@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
@@ -25,6 +24,7 @@ public interface MovieRepository extends Neo4jRepository<Movie, Long>, MovieRepo
 }
 
 interface MovieRepositoryExt {
+	@Transactional
 	@Async
 	CompletableFuture<String> getRandomString(Duration sleep);
 
@@ -39,31 +39,29 @@ class MovieRepositoryImpl implements MovieRepositoryExt {
 
 	private final Neo4jClient neo4jClient;
 
-	private final TransactionTemplate transactionTemplate;
-
 	private final AsyncCustomQueries asyncCustomQueries;
 
 	private final OneClassSolution oneClassSolution;
 
-	public MovieRepositoryImpl(Neo4jClient neo4jClient, TransactionTemplate transactionTemplate,
+	MovieRepositoryImpl(Neo4jClient neo4jClient, TransactionTemplate transactionTemplate,
 		AsyncCustomQueries asyncCustomQueries,
 		OneClassSolution oneClassSolution
 	) {
 		this.neo4jClient = neo4jClient;
-		this.transactionTemplate = transactionTemplate;
 		this.asyncCustomQueries = asyncCustomQueries;
 		this.oneClassSolution = oneClassSolution;
 	}
 
 	@Override
 	public CompletableFuture<String> getRandomString(Duration sleep) {
-		Supplier<String> stringSupplier = () -> transactionTemplate.execute(tx ->
-			this.neo4jClient.query("call apoc.util.sleep($timeout) return 'Foo'")
-				.bind(sleep.toMillis()).to("timeout")
-				.fetchAs(String.class).one().get());
-
-		// See that the tx template is applied *inside* the future, that order is paramount
-		return CompletableFuture.supplyAsync(stringSupplier);
+		try {
+			return CompletableFuture.completedFuture(
+				this.neo4jClient.query("call apoc.util.sleep($timeout) return 'Foo'")
+					.bind(sleep.toMillis()).to("timeout")
+					.fetchAs(String.class).one().get());
+		} catch (Exception e) {
+			return CompletableFuture.failedFuture(e);
+		}
 	}
 
 	@Override public CompletableFuture<Collection<String>> getRandomStrings(Duration sleep) {

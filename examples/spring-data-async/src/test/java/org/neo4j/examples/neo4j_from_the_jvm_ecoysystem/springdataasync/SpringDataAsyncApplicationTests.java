@@ -103,6 +103,18 @@ class SpringDataAsyncApplicationTests {
 		assertThat(aFutureString)
 			.succeedsWithin(Duration.ofSeconds(10))
 			.isEqualTo("Foo");
+
+		// Make sure they do run in parallel even with the completed futures (without using supplyAsync)
+		int n = 10;
+		CompletableFuture<?>[] futures = new CompletableFuture[n];
+
+		for (int i = 0; i < n; ++i) {
+			futures[i] = movieRepository.getRandomString(Duration.ofMillis(1500))
+				.whenComplete((l, e) -> System.out.println(l));
+		}
+
+		assertThat(CompletableFuture.allOf(futures))
+			.succeedsWithin(Duration.ofSeconds(n / 2));
 	}
 
 	@Test
