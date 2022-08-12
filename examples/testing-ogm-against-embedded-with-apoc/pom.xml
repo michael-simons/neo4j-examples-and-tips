@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>org.neo4j.procedure</groupId>
 			<artifactId>apoc</artifactId>
-			<version>4.0.0.13</version>
+			<version>4.3.0.7</version>
 			<scope>test</scope>
 		</dependency>
 
