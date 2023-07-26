@@ -20,9 +20,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import apoc.ApocConfig;
+import apoc.ExtendedApocGlobalComponents;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterAll;
@@ -48,7 +52,7 @@ class ApplicationTests {
 	private static Neo4j neo4j;
 
 	@BeforeAll
-	static void startEmbeddedNeo4j() throws URISyntaxException {
+	static void startEmbeddedNeo4j() throws URISyntaxException, IOException {
 
 		// We need the directory containing the APOC jar, otherwise all APOC procedures must be loaded manually.
 		// While the intuitive idea might be not having APOC on the class path at all in that case and just dump
@@ -56,13 +60,26 @@ class ApplicationTests {
 		// and those are not loaded from the plugin unless it's part of the original class loader that loaded neo.
 		// If you know which methods you're a gonna use, you can configure them manually instead.
 		var pluginDirContainingApocJar = new File(
-			ApocConfig.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+			ExtendedApocGlobalComponents.class.getProtectionDomain().getCodeSource().getLocation().toURI())
 			.getParentFile().toPath();
+
+		// This will be the local maven repo most of the time, which may contain the extend part (non-all) already.
+		// So copy the all one
+		var pluginDir = Files.createTempDirectory("neo4j-apoc-");
+		Files.find(pluginDirContainingApocJar, 1, (p, a) -> p.getFileName().toString().endsWith("-all.jar"))
+			.forEach(p -> {
+				try {
+					Files.copy(p, pluginDir.resolve(p.getFileName()));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			});
+
 		neo4j = Neo4jBuilders
 			.newInProcessBuilder()
 			.withDisabledServer() // We don't need the HTTP endpoint
 			.withFixture("CREATE (m:Movie {title: 'Fight Club'}) RETURN m")
-			.withConfig(GraphDatabaseSettings.plugin_dir, pluginDirContainingApocJar)
+			.withConfig(GraphDatabaseSettings.plugin_dir, pluginDir)
 			.withConfig(GraphDatabaseSettings.procedure_unrestricted, List.of("apoc.*"))
 			.build();
 
@@ -109,7 +126,7 @@ class ApplicationTests {
 
 		client.perform(get("/actuator/info"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.apocVersion").value("4.0.0.13"));
+			.andExpect(jsonPath("$.apocVersion").value("4.4.0.9"));
 	}
 
 	@AfterAll

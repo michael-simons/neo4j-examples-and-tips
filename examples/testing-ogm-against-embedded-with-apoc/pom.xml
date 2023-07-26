@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>11</java.version>
-		<neo4j.version>4.0.5</neo4j.version>
+		<neo4j.version>4.4.23</neo4j.version>
 	</properties>
 
 	<dependencies>
@@ -53,8 +53,9 @@
 		<dependency>
 			<groupId>org.neo4j.procedure</groupId>
 			<artifactId>apoc</artifactId>
-			<version>4.0.0.13</version>
+			<version>4.4.0.9</version>
 			<scope>test</scope>
+			<classifier>all</classifier>
 		</dependency>
 
 
