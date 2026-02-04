@@ -23,7 +23,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>11</java.version>
-		<neo4j-server.version>3.5.30</neo4j-server.version>
+		<neo4j-server.version>5.26.21</neo4j-server.version>
 	</properties>
 
 	<dependencies>
